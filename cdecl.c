@@ -39,8 +39,10 @@ struct token this;
 void usage(void)
 {
 	printf("cdecl prints out the English language form of a C declaration.\n");
-	printf("Invoke as 'cdecl <declaration>'.\n");
-	printf("Known deficiencies:\n\ta) doesn't handle multi-line struct declarations;\n");
+	printf("Invoke as 'cdecl <declaration>' or\n");
+	printf("provide input on stdin and use '-' as the single command-line argument.\n");
+
+	printf("Known deficiencies:\n\ta) doesn't handle multi-line struct and union declarations;\n");
 	printf("\tb) doesn't handle multiple comma-separated identifiers;\n");
 	printf("\tc) handles multi-dimensional arrays awkwardly;\n");
 	printf("\td) includes only the most basic checks for declaration errors.\n");
@@ -273,6 +275,30 @@ int pop_stack(int tokennum)
 	return(--tokennum);
 }
 
+int process_stdin(char *stdinp)
+{
+	char *stringp = (char *) malloc(MAXTOKENLEN);
+	char *savep = stringp;
+
+	int i = 0;
+	if (fgets(stdinp, MAXTOKENLEN, stdin) != NULL) {
+		strcpy(stringp, stdinp);
+		/* line from stdin ends in '\n' */
+		/* while ((*stringp++ = getchar())!= '\n') */
+		while (*stringp++ != '\n')
+			i++;
+		/* make last character a null instead of '\n' */
+		*--stringp='\0';
+	} else {
+		fprintf(stderr, "No input.\n");
+		if (stringp) free(stringp);
+		exit(-1);
+	}
+
+	free(savep);
+	return(i);
+}
+
 void parse_declarator (char input[], int slen)
 {
 
@@ -376,12 +402,20 @@ int main(int argc, char **argv)
 	/* stack starts at 1 so that (!stacklen) means an empty stack,
 	but initialize to zero because counter is incremented before
 	calling push_stack */
-	int stacklen = 0;
+	int stacklen = 0, retval = 0;
 
-	if (argc < 2)
+	if (argc == 1)
 		usage();
 
-	strcpy(inputstr, argv[1]);
+	if (argv[1][0] == '-') {
+		if (!(retval = process_stdin(inputstr))) {
+			printf("Bad input from stdin\n");
+			usage();
+			exit(-1);
+		}
+	} else 	/* read input from CLI */
+		strcpy(inputstr, argv[1]);
+
 	if (strstr(inputstr, "=")) {
 		nexttoken = strtok(inputstr, "=");
 		strcpy(inputstr, nexttoken); /* dump chars after '=' */
