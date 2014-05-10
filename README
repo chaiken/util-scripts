@@ -1,0 +1,21 @@
+Here are some simple C programs that are useful to C programmers.
+
+hex2dec and dec2hex perform the format conversions that should be obvious from their names.   They will read either from stdin or from the command-line, making the following the obvious test:
+
+	bash$ hex2dec 0xFFF | dec2hex
+	0xFFF
+
+cdecl is a program originally suggested by Kernighan and Ritchie on p. 100 of _The C Programming Language_ in the section "Complicated Declarations."   They say "we will present a pair of programs that convert from valid C to a word description and back again. The word description reads left to right."   I only wrote the program that converts C into English.   
+
+The problem is also discussed by Peter van der Linden in the Programming Challenge  of Chapter 3, p. 85 of _Expert C Programming: Deep C Secrets_, p. 85 of Chapter 3.   The challenge is "Write a program to translate C declarations into English".   I wrote this version without first consulting either of van der Linden's or K&R's versions.   Theirs are more elegant, but I have confirmed that mine reproduces their answers.   Caveat emptor!
+
+cdecl also works either with command-line or stdin input.   In the latter case, use '-' as an argument after the "cdecl" command:
+
+      bash$ echo "char *foo;" | cdecl -
+      foo is a(n) pointer(s) to char 
+
+Processing command line input adds considerable complexity to the program, as does the limited error checking.   I've attempted to support all the features described in K&R with the exception of those noted in the usage() output.
+
+-- Alison Chaiken
+   alchaiken@gmail.com
+
