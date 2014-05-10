@@ -138,9 +138,6 @@ void process_function_args(char startstring[], int *arglength)
 	exit(-1);
 }
 
-
-
-/* fails for multidimensional arrays */
 void process_array(char startstring[], int *sizelen)
 {
 	char endstring[MAXTOKENLEN];
@@ -156,12 +153,10 @@ void process_array(char startstring[], int *sizelen)
 	if (endstring[*sizelen] == ']') {
 		/* print any array size values */
 		if (*sizelen >= 1) {
-			printf("size ");
 			while (i++ < *sizelen)
 				printf("%c", startstring[i-1]);
 		}
-		/* only here we need a leading space */
-		printf(" of type ");
+		printf(" ");
 		return;
 	}
 
@@ -249,30 +244,41 @@ void push_stack(int tokennum)
 }
 
 /* move back to the left */
-int pop_stack(int tokennum)
+void pop_stack(int *tokennum)
 {
 
-	if (!tokennum) {
+	if (!(*tokennum)) {
 		printf("\nAttempt to pop empty stack.\n");
 		exit(-ENODATA);
 	}
 
-	if (!strcmp(stack[tokennum].string, "*"))
+	if (!strcmp(stack[*tokennum].string, "*"))
 		printf("pointer(s) to ");
 	/* print all qualifiers but pointer */
-	else if (stack[tokennum].kind == qualifier)
-		printf("that is %s\n", stack[tokennum].string);
-	else if (stack[tokennum].kind == type) {
-		if (tokennum == 1)
-			printf("%s\n", stack[tokennum].string);
-		else
-			printf("%s ", stack[tokennum].string);
-	}
+	else switch(stack[*tokennum].kind) {
+		case qualifier:
+			printf("that is %s\n", stack[*tokennum].string);
+			break;
+		case type:
+			printf("%s ", stack[*tokennum].string);
+			break;
+		case delimiter:
+			/* we are ignoring this token, which should be
+			   the opening parenthesis of a function pointer.
+			There should be no array delimiters on the stack */
+			(*tokennum)--;
+			pop_stack(tokennum);
+			break;
+		default:
+			fprintf(stderr, "\nError: element %s is of unknown type %d.\n", this.string, this.kind);
+			exit(-1);
+		}
 
-	fflush(stdout);
-	memset(stack[tokennum].string, '\0', MAXTOKENLEN);
-	stack[tokennum].kind = 0;
-	return(--tokennum);
+	memset(stack[*tokennum].string, '\0', MAXTOKENLEN);
+	stack[*tokennum].kind = 0;
+	if (*tokennum)
+		(*tokennum)--;
+	return;
 }
 
 int process_stdin(char *stdinp)
@@ -299,7 +305,7 @@ int process_stdin(char *stdinp)
 	return(i);
 }
 
-void parse_declarator (char input[], int slen)
+void parse_declarator (char input[], int *slen)
 {
 
 	/* strstr() shouldn't return NULL since we've already determined
@@ -342,6 +348,9 @@ void parse_declarator (char input[], int slen)
 				/* go past any function args */
 				while ((*argoffset)--) declp++;
 				*argoffset = 0;
+				/* go past closing ')' */
+				declp++;
+				offset++;
 				break;
 			}
 			/* process function pointers */
@@ -364,11 +373,7 @@ void parse_declarator (char input[], int slen)
 			fprintf(stderr, "\nType declaration to the right of the identifier in %s is illegal.\n", this.string);
 			break;
 		case qualifier:
-			if (!(strcmp(this.string, "*"))) {
-				printf("pointer(s) to ");
-				slen--;
-				break;
-			} else push_stack(++slen);
+			push_stack(++(*slen));
 			break;
 		case identifier:
 			fprintf(stderr, "\nSecond identifier %s is illegal.\n", this.string);
@@ -379,10 +384,10 @@ void parse_declarator (char input[], int slen)
 	memset(this.string, '\0', MAXTOKENLEN);
 	this.kind = 0;
 
-	/* (!slen) means empty stack */
-	while (slen) {
-		if ((strcmp(stack[slen].string, ")")) || (strcmp(stack[slen].string, "*")) || (stack[slen].kind == qualifier))
-			slen = pop_stack(slen);
+	/* (!(*slen)) means empty stack */
+	while (*slen) {
+		if ((strcmp(stack[*slen].string, ")")) || (strcmp(stack[*slen].string, "*")) || (stack[*slen].kind == qualifier))
+			pop_stack(slen);
 		if (slen)
 			parse_declarator(input, slen);
 	}
@@ -427,7 +432,7 @@ int main(int argc, char **argv)
 	}
 
 	while ((gettoken(&nexttoken)) && (get_kind(this.string) != identifier))
-		push_stack(++stacklen); /* moving to the right */
+		push_stack((++stacklen)); /* moving to the right */
 
 	if (this.kind == identifier)
 		printf("%s is a(n) ", this.string);
@@ -438,9 +443,10 @@ int main(int argc, char **argv)
 
 	/* if there's stuff on the stack or to the right of the identifier */
 	if ((stacklen) || (nexttoken < (strlen(inputstr) + &(inputstr[0]))))
-		parse_declarator(inputstr, stacklen);
+		parse_declarator(inputstr, &stacklen);
 
 	/*	showstack(); */
+	printf("\n");
 	free(saveptr);
 	exit(0);
 }
