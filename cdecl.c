@@ -409,7 +409,7 @@ int main(int argc, char **argv)
 
 	/* char inputstr[] = "char* extern *(*bar), int foo; "; */
 	char inputstr[MAXTOKENLEN];
-	char *nexttoken = (char *) malloc(strlen(inputstr) + 1);
+	char *nexttoken = (char *) malloc(MAXTOKENLEN);
 	/* preserve original pointer so that it can be freed */
 	char *saveptr = nexttoken;
 	/* stack starts at 1 so that (!stacklen) means an empty stack,
