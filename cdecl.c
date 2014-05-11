@@ -5,7 +5,7 @@
 *	Created:  Sun May  4 21:37:27 CEST 2014				      *
 *	Contents: cdecl is my answer to Peter van der Linden's                *
 *       Programming Challenge to "Write a program to translate C              *
-*       declarationsinto English" in _Expert C Programming: Deep C Secrets_,  *
+*       declarations into English" in _Expert C Programming: Deep C Secrets_, *
 *       p. 85 in Chapter 3.  The program is also useful, in that it parses    *
 *       C-language declarations and outputs a natural language equivalent.    *
 *       Not all features of a real compiler's parser are supported, as        *
@@ -45,7 +45,10 @@ void usage(void)
 	printf("Known deficiencies:\n\ta) doesn't handle multi-line struct and union declarations;\n");
 	printf("\tb) doesn't handle multiple comma-separated identifiers;\n");
 	printf("\tc) handles multi-dimensional arrays awkwardly;\n");
-	printf("\td) includes only the most basic checks for declaration errors.\n");
+	printf("\td) includes only the most basic checks for declaration errors;\n");
+	printf("\te) includes only the qualifiers defined in ANSI C, not LIBC\n");
+	printf("or kernel extensions;\n");
+	printf("\tf) doesn't process identifiers in function argument lists.\n ");
 	exit(-1);
 }
 
@@ -108,7 +111,6 @@ void process_function_args(char startstring[], int *arglength)
 
 	*arglength = 0;
 	strcpy(endstring, startstring);
-	printf("a function ");
 
 	while ((*arglength < strlen(startstring)) && (endstring[*arglength] != ')'))
 		(*arglength)++;
@@ -125,7 +127,7 @@ void process_function_args(char startstring[], int *arglength)
 				printf(" and");
 			else putchar(endstring[i]);
 		}
-		printf(" args and \n");
+		printf(" args and ");
 	}
 
 	printf("that returns ");
@@ -252,20 +254,21 @@ void pop_stack(int *tokennum)
 		exit(-ENODATA);
 	}
 
+	/* Qualifiers following * apply to the pointer itself,
+	   rather than to the object to which the pointer points.
+	*/
 	if (!strcmp(stack[*tokennum].string, "*"))
 		printf("pointer(s) to ");
 	/* print all qualifiers but pointer */
 	else switch(stack[*tokennum].kind) {
 		case qualifier:
-			printf("that is %s\n", stack[*tokennum].string);
-			break;
 		case type:
 			printf("%s ", stack[*tokennum].string);
 			break;
 		case delimiter:
-			/* we are ignoring this token, which should be
-			   the opening parenthesis of a function pointer.
-			There should be no array delimiters on the stack */
+			/* Ignore this token, which should be the
+			   opening parenthesis of a function pointer.
+			   There should be no array delimiters on the stack */
 			(*tokennum)--;
 			pop_stack(tokennum);
 			break;
@@ -341,7 +344,7 @@ void parse_declarator (char input[], int *slen)
 			if (!(strcmp(this.string, "]")))
 				break;
 			/* this opening parenthesis is to the right of the
-			identifier, so it should enclose functions args */
+			identifier, so it can only enclose functions args */
 			if (!(strcmp(this.string,"("))) {
 				process_function_args(&input[offset], argoffset);
 				offset += *argoffset;
@@ -353,7 +356,10 @@ void parse_declarator (char input[], int *slen)
 				offset++;
 				break;
 			}
-			/* process function pointers */
+			/* here process function pointers on the stack,
+			   as the closing ')' of function args was
+			   discarded above
+			*/
 			if (!(strcmp(this.string, ")"))) {
 				pop_stack(slen);
 				break;
@@ -413,6 +419,8 @@ int main(int argc, char **argv)
 		usage();
 
 	if (argv[1][0] == '-') {
+		/* extract a single declaration from possible multiple
+		   declarations and initialization of the input string */
 		if (!(retval = process_stdin(inputstr))) {
 			printf("Bad input from stdin\n");
 			usage();
