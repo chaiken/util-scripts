@@ -107,7 +107,7 @@ void process_function_args(char startstring[], int *arglength)
 	char endstring[MAXTOKENLEN];
 	char *argstring = (char *) malloc(strlen(startstring));
 	char *saveptr = argstring;
-	int i;
+	int i, printargs = 0;
 
 	*arglength = 0;
 	strcpy(endstring, startstring);
@@ -115,14 +115,23 @@ void process_function_args(char startstring[], int *arglength)
 	while ((*arglength < strlen(startstring)) && (endstring[*arglength] != ')'))
 		(*arglength)++;
 
-	if (*arglength) {
-		printf("that takes ");
-		if (endstring[*arglength] != ')') {
-			fprintf(stderr, "Malformed function arguments %s\n", argstring);
-			exit(-1);
-		}
+	if (endstring[*arglength] != ')') {
+		fprintf(stderr, "Malformed function arguments %s\n", argstring);
+		exit(-1);
+	}
 
-		for (i = 0; i < *arglength; i++) {
+	printargs = *arglength;
+
+	if (strstr(endstring, ". . .")) {
+		printf("a variadic function ");
+		/* 3 '.', 3 spaces, one comma */
+		printargs -= 7;
+	} else printf("a function ");
+
+	if (printargs) {
+		printf("that takes ");
+
+		for (i = 0; i < printargs; i++) {
 			if (endstring[i] == ',')
 				printf(" and");
 			else putchar(endstring[i]);
