@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <assert.h>
 #include <asm-generic/errno.h>
 
 #define MAXTOKENLEN 64
@@ -60,6 +61,8 @@ enum token_class get_kind (const char *intoken)
 	char *qualifiers[] = { "const", "register", "volatile", "static", "*", "extern" };
 	int numel = 0, i;
 
+	assert(intoken);
+
 	numel = ARRAY_SIZE(delimiters);
 	for (i = 0; i < numel; i++) {
 		if (!strcmp(intoken, delimiters[i]))
@@ -96,11 +99,6 @@ void showstack(void)
 	return;
 }
 
-void replace_comma_with_and()
-{
-	return;
-}
-
 /* fails for multiple arguments */
 void process_function_args(char startstring[], int *arglength)
 {
@@ -108,6 +106,8 @@ void process_function_args(char startstring[], int *arglength)
 	char *argstring = (char *) malloc(strlen(startstring));
 	char *saveptr = argstring;
 	int i, printargs = 0;
+
+	assert(startstring);
 
 	*arglength = 0;
 	strcpy(endstring, startstring);
@@ -155,6 +155,8 @@ void process_array(char startstring[], int *sizelen)
 	*sizelen = 0;
 	int i = 0;
 
+	assert(startstring);
+
 	strcpy(endstring, (const char *) startstring);
 	printf("array of ");
 
@@ -178,6 +180,8 @@ void process_array(char startstring[], int *sizelen)
 
 void classify_string (struct token *newtoken)
 {
+
+	assert(newtoken);
 
 	/* default is identifier */
 	newtoken->kind = get_kind(newtoken->string);
@@ -209,7 +213,7 @@ int gettoken (char **declstring)
 
 	if ((tokenlen = strlen(*declstring)) > MAXTOKENLEN) {
 		fprintf(stderr, "\nToken too long %s.\n", *declstring);
-		return(0);
+		exit(-EOVERFLOW);
 	}
 	if (!tokenlen)
 		return(0);
@@ -441,8 +445,13 @@ int main(int argc, char **argv)
 	if (strstr(inputstr, "=")) {
 		nexttoken = strtok(inputstr, "=");
 		strcpy(inputstr, nexttoken); /* dump chars after '=' */
-	} else if (strstr(inputstr, ";"))
+	} else if (strstr(inputstr, ";")) {
 		nexttoken = strtok(inputstr, ";");
+		if (!nexttoken) {
+			fprintf(stderr, "Zero-length input string.\n");
+			exit(-1);
+		}
+	}
 	else {
 		printf("\nImproperly terminated declaration.\n");
 		exit(-1);
