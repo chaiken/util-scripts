@@ -275,6 +275,9 @@ void pop_stack(int *tokennum)
 	/* print all qualifiers but pointer */
 	else switch(stack[*tokennum].kind) {
 		case qualifier:
+			/* next two lines are deleted on laptop */
+			printf("%s ", stack[*tokennum].string);
+			break;
 		case type:
 			printf("%s ", stack[*tokennum].string);
 			break;
