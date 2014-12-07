@@ -5,6 +5,8 @@ hex2dec and dec2hex perform the format conversions that should be obvious from t
 	bash$ hex2dec 0xFFF | dec2hex
 	0xFFF
 
+hexsum is bash script that performs addition or substraction on a pair of hex numbers by invoking hex2dec.
+
 cdecl is a program originally suggested by Kernighan and Ritchie on p. 100 of the Second "ANSI C" Edition of  _The C Programming Language_ in the section "Complicated Declarations."   They say "we will present a pair of programs that convert from valid C to a word description and back again. The word description reads left to right."   I only wrote the program that converts C into English.   K&R present a simpler version of cdecl as an example, while more featureful versions like that presented here are outlined in Exercises 5-18 and 5-20.
 
 The problem is also discussed by Peter van der Linden in the Programming Challenge  of Chapter 3, p. 85 of _Expert C Programming: Deep C Secrets_, p. 85 of Chapter 3.   The challenge is "Write a program to translate C declarations into English".   I wrote this version without first consulting either of van der Linden's or K&R's versions.   Theirs are more elegant, but I have confirmed that mine reproduces their answers.   Caveat emptor!
