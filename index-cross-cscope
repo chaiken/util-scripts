@@ -1,0 +1,8 @@
+#!/bin/bash
+export PATH=$PATH:<path to arm-oe-linux-gnueabi-gcc>
+export SYSR=`arm-oe-linux-gnueabi-gcc -print-sysroot`
+/usr/bin/find . -name "*.h" > cscope.files
+/usr/bin/find . -name "*.c" >> cscope.files
+/usr/bin/find $SYSR/usr/include/ -type f -name "*.h" >> cscope.files
+/usr/bin/find  $SYSR/usr/lib/gcc/arm-oe-linux-gnueabi/ -type f -name "*.h" >> cscope.files
+cscope -b -f cscope.out
