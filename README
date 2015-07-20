@@ -5,7 +5,9 @@ hex2dec and dec2hex perform the format conversions that should be obvious from t
 	bash$ hex2dec 0xFFF | dec2hex
 	0xFFF
 
-hexsum is bash script that performs addition or substraction on a pair of hex numbers by invoking hex2dec.
+hexsum is a bash script that performs addition or substraction on a pair of hex numbers by invoking hex2dec.
+
+watch_file and watch_one_file provide a simple method for the user to spy on which files another program is accessing without generating the giant spew of strace.
 
 cdecl is a program originally suggested by Kernighan and Ritchie on p. 100 of the Second "ANSI C" Edition of  _The C Programming Language_ in the section "Complicated Declarations."   They say "we will present a pair of programs that convert from valid C to a word description and back again. The word description reads left to right."   I only wrote the program that converts C into English.   K&R present a simpler version of cdecl as an example, while more featureful versions like that presented here are outlined in Exercises 5-18 and 5-20.
 
