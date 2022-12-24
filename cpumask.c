@@ -1,6 +1,8 @@
 /*
  *
- * A trivial program that spits out cpumasks.
+ * Given a list and/or range of CPU cores as input, print out the CPU mask.
+ * Rely on the math library function pow() rather than the shift operator given
+ * that current systems may have a huge number of cores.
  * Alison Chaiken (alison@she-devel.com)
  * GPLv2 or greater.
  *
@@ -22,11 +24,12 @@ void usage(void) {
 }
 
 /* Convert a string to a core number. */
-uint32_t parse_core(const char *core_name) {
+uint64_t parse_core(const char *core_name) {
   errno = 0;
-  uint32_t core = strtoul(core_name, NULL, 10);
-  if (errno || (0U == strlen(core_name))) {
-    fprintf(stderr, "Illegal core value %s\n", core_name);
+  uint64_t core = strtoul(core_name, NULL, 10);
+  if (errno || (0U == strlen(core_name)) || (core > 63U)) {
+    fprintf(stderr, "Illegal core value %s.\n", core_name);
+    fprintf(stderr, "Core values larger than 63U overflow 64-bit masks.\n");
     exit(EXIT_FAILURE);
   }
   return core;
@@ -43,8 +46,8 @@ uint64_t parse_range(char *core_name, char *dash_pos) {
     fprintf(stderr, "Out of memory.\n");
     exit(EXIT_FAILURE);
   }
-  uint32_t start = parse_core(range_start);
-  const uint32_t end = parse_core(range_end);
+  uint64_t start = parse_core(range_start);
+  const uint64_t end = parse_core(range_end);
   while (start <= end) {
     increment += pow(2, start);
     start++;
@@ -61,6 +64,7 @@ uint64_t calc_mask(char *corelist) {
   char *core_name = strtok(corelist, ",");
   /* Guard against empty strings or ","  */
   if (!core_name || !strlen(core_name)) {
+    fprintf(stderr, "Invalid core name %s\n", core_name);
     return mask;
   }
   /* Perform the test only after processing the initial input. */
@@ -69,7 +73,7 @@ uint64_t calc_mask(char *corelist) {
     if ((dash_pos = index(core_name, '-')) != NULL) {
       mask += parse_range(core_name, dash_pos);
     } else {
-      uint32_t core = parse_core(core_name);
+      uint64_t core = parse_core(core_name);
       mask += pow(2, core);
     }
   } while ((core_name = strtok(NULL, ",")) != NULL);
