@@ -1,6 +1,6 @@
 ### Here are some simple C programs that are useful to systems programmers.
 
-1. _cpumask_ calculates hexadecimal cpumasks that are useful with, for example, /usr/bin/taskset from [util-linux](git clone git://git.kernel.org/pub/scm/utils/util-linux/util-linux.git).
+1. _cpumask_ calculates hexadecimal cpumasks that are useful with, for example, /usr/bin/taskset from [util-linux](git://git.kernel.org/pub/scm/utils/util-linux/util-linux.git).
 
 2. _hex2dec_ and _dec2hex_ perform the format conversions that should be obvious from their names.   They will read either from stdin or from the command-line, making the following the obvious test:
 
