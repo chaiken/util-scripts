@@ -16,11 +16,15 @@
 #include <strings.h>
 
 void usage(void) {
-  fprintf(stderr, "Provide a comma-separated list of cores with optional "
-                  "dashes\n");
-  fprintf(stderr, "to indicate ranges. Core numbering starts at 0.  End the "
-                  "input with a comma.\n");
-  fprintf(stderr, "Cores in ranges must be in increasing order.\n");
+  fprintf(stderr, "Provide a comma-separated list of cores with optional\n");
+  fprintf(stderr,
+          "dashes to indicate ranges. Core numbering starts at 0.  End\n");
+  fprintf(stderr, "the input with a comma.\n");
+  fprintf(stderr, "Example output:\n");
+  fprintf(stderr, "$ cpumask 1,4,5\n");
+  fprintf(stderr, "0x32\n");
+  fprintf(stderr, "$ cpumask 1,4-5\n");
+  fprintf(stderr, "0x32\n");
 }
 
 /* Convert a string to a core number. */
@@ -86,7 +90,7 @@ int main(int argc, char *argv[]) {
     exit(EXIT_FAILURE);
   }
 
-  printf("mask is %#lx\n", calc_mask(argv[1]));
+  printf("%#lx\n", calc_mask(argv[1]));
 
   exit(EXIT_SUCCESS);
 }
