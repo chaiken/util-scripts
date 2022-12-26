@@ -49,4 +49,42 @@ AddressSanitizer:DEADLYSIGNAL
   EXPECT_EQ(3, parse_range("0-1,", 1U));
   // works with multi-digit delimiters
   EXPECT_EQ((1 << 10) + (1 << 11), parse_range("10-11,", 2U));
+  // Empty range.
+  EXPECT_EQ(0, parse_range("1-0,", 1U));
+  // Single-core equivalent.
+  EXPECT_EQ(2, parse_range("1-1,", 1U));
+}
+
+TEST(SimpleCpuMaskTest, BadRanges) {
+  EXPECT_EXIT(parse_range("0123,", 0U), testing::ExitedWithCode(1),
+              "Illegal range endpoints");
+  EXPECT_EXIT(parse_range("0123,", 150U), testing::ExitedWithCode(1),
+              "Malformed core range");
+  EXPECT_EXIT(parse_range("---,", 0U), testing::ExitedWithCode(1),
+              "Illegal range endpoints");
+  EXPECT_EXIT(parse_range("---,", 1U), testing::ExitedWithCode(1),
+              "Illegal range endpoints");
+  EXPECT_EXIT(parse_range("01-,", 1U), testing::ExitedWithCode(1),
+              "Illegal range endpoints");
+  EXPECT_EXIT(parse_range("01-,", 2U), testing::ExitedWithCode(1),
+              "Illegal range endpoints");
+  EXPECT_EXIT(parse_range("127-128,", 3U), testing::ExitedWithCode(1),
+              "Illegal core value");
+}
+
+TEST(SimpleCpuMaskTest, CalcMask) {
+  // Single core.
+  EXPECT_EQ(7, calc_mask("0-2,"));
+  // Cores and ranges.
+  EXPECT_EQ(3 + (1 << 10) + (1 << 11), calc_mask("0,1,10-11,"));
+  EXPECT_EQ(3 + (1 << 10) + (1 << 11), calc_mask("0,10-11,1,"));
+  EXPECT_EQ(3 + (1 << 10) + (1 << 11), calc_mask("10-11,1,0,"));
+  // Ranges plus single cores.
+  EXPECT_EQ(3 + (1 << 10), calc_mask(std::string("0-1,10,").c_str()));
+  EXPECT_EQ(3 + (1 << 10), calc_mask(std::string("10,0-1,").c_str()));
+  // Examples from "man taskset".
+  EXPECT_EQ(1, calc_mask(std::string("0,").c_str()));
+  EXPECT_EQ(3, calc_mask(std::string("0-1,").c_str()));
+  EXPECT_EQ(0xFFFFFFFF, calc_mask(std::string("0-31,").c_str()));
+  EXPECT_EQ(0x32, calc_mask(std::string("1,4,5,").c_str()));
 }
