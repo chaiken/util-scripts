@@ -1,0 +1,47 @@
+From 3cb4d3859bb359cb266be0b014600e71fc749c14 Mon Sep 17 00:00:00 2001
+From: Alison Chaiken <alison@she-devel.com>
+Date: Mon, 26 Dec 2022 10:56:52 -0800
+Subject: [PATCH] reproduce SEGV
+
+---
+ Makefile             | 4 +---
+ cpumask_testsuite.cc | 4 +---
+ 2 files changed, 2 insertions(+), 6 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index f08f342..c1d3fa1 100644
+--- a/Makefile
++++ b/Makefile
+@@ -46,11 +46,9 @@ cpumask: cpumask.c
+ # 	$(CFLAGS) $(LDFLAGS)
+ # make cpumask_test
+ # ./cpumask_test
+-cpumask_testsuite.o: cpumask_testsuite.cc
+-	$(CPPCC) -isystem $(GTEST_HEADERS) $(CVALGRINDFLAGS) -fsanitize=undefined -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o"$@" "$<"
+ 
+ cpumask_test: cpumask_testsuite.o cpumask.c
+-	$(CPPCC) $(CVALGRINDFLAGS) $(LDVALGRINDFLAGS) -fsanitize=undefined -Wall -o cpumask_test cpumask_testsuite.o $(GTESTLIBS)
++	$(CPPCC) $(CFLAGS) $(LDFLAGS) -Wall -o cpumask_test cpumask_testsuite.o $(GTESTLIBS)
+ 
+ clean:
+ 	/bin/rm -rf *.o *~ hex2dec dec2hex cdecl cpumask cpumask_test
+diff --git a/cpumask_testsuite.cc b/cpumask_testsuite.cc
+index 9834393..7f383be 100644
+--- a/cpumask_testsuite.cc
++++ b/cpumask_testsuite.cc
+@@ -40,11 +40,9 @@ AddressSanitizer:DEADLYSIGNAL
+     #7 0x55b280c0c595 in std::__shared_ptr<char const, (__gnu_cxx::_Lock_policy)2>::~__shared_ptr() /usr/include/c++/12/bits/shared_ptr_base.h:1524
+     #8 0x55b280c0c603 in std::shared_ptr<char const>::~shared_ptr() /usr/include/c++/12/bits/shared_ptr.h:175
+     #9 0x55b280c08847 in SimpleCpuMaskTest_ParseRange_Test::TestBody() /home/alison/gitsrc/util-scripts/cpumask_testsuite.cc:27
+-
++  */
+    std::shared_ptr<const char> str1("0-1");
+    EXPECT_EQ(3, parse_range(str1.get(), 1U));
+-   clang-format on
+-  */
+   // works with single-digit delimiters
+   EXPECT_EQ(3, parse_range("0-1,", 1U));
+   // works with multi-digit delimiters
+-- 
+2.35.1
+
