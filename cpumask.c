@@ -44,11 +44,15 @@ uint64_t parse_core(const char *core_name) {
 
 /* Return the mask corresponding to a core range indicated by a dash-separated
  * pair of numbers in increasing order. */
-uint64_t parse_range(const char *core_name, const size_t dash_offset) {
+uint64_t parse_range(const char *core_names, const size_t dash_offset) {
   uint64_t increment = 0U;
-  char *range_start = strndup(core_name, dash_offset);
-  char *range_end = strndup(core_name + dash_offset + 1U,
-                            (strlen(core_name) - strlen(range_start)) - 1U);
+  if (dash_offset > strlen(core_names)) {
+    fprintf(stderr, "Malformed core range: %s\n", core_names);
+    exit(EXIT_FAILURE);
+  }
+  char *range_start = strndup(core_names, dash_offset);
+  char *range_end = strndup(core_names + dash_offset + 1U,
+                            (strlen(core_names) - strlen(range_start)) - 1U);
   if (!range_start || !range_end) {
     fprintf(stderr, "Out of memory.\n");
     exit(EXIT_FAILURE);
