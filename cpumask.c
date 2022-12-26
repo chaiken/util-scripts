@@ -7,6 +7,7 @@
  * GPLv2 or greater.
  *
  */
+#include <ctype.h>
 #include <errno.h>
 #include <math.h>
 #include <stdint.h>
@@ -31,9 +32,11 @@ void usage(void) {
 uint64_t parse_core(const char *core_name) {
   errno = 0;
   uint64_t core = strtoul(core_name, NULL, 10);
-  if (errno || (0U == strlen(core_name)) || (core > 63U)) {
+  if (errno || !isdigit(*core_name) || (core > 63U)) {
     fprintf(stderr, "Illegal core value %s.\n", core_name);
-    fprintf(stderr, "Core values larger than 63U overflow 64-bit masks.\n");
+    if (core > 63U) {
+      fprintf(stderr, "Core values larger than 63U overflow 64-bit masks.\n");
+    }
     exit(EXIT_FAILURE);
   }
   return core;
@@ -41,13 +44,18 @@ uint64_t parse_core(const char *core_name) {
 
 /* Return the mask corresponding to a core range indicated by a dash-separated
  * pair of numbers in increasing order. */
-uint64_t parse_range(char *core_name, char *dash_pos) {
+uint64_t parse_range(const char *core_name, const size_t dash_offset) {
   uint64_t increment = 0U;
-  char *range_start = strndup(core_name, dash_pos - core_name);
-  char *range_end =
-      strndup(dash_pos + 1, strlen(core_name) - strlen(range_start));
+  char *range_start = strndup(core_name, dash_offset);
+  char *range_end = strndup(core_name + dash_offset + 1U,
+                            (strlen(core_name) - strlen(range_start)) - 1U);
   if (!range_start || !range_end) {
     fprintf(stderr, "Out of memory.\n");
+    exit(EXIT_FAILURE);
+  }
+  if (!strlen(range_start) || !strlen(range_end)) {
+    fprintf(stderr, "Illegal range endpoints %s and %s.\n", range_start,
+            range_end);
     exit(EXIT_FAILURE);
   }
   uint64_t start = parse_core(range_start);
@@ -69,17 +77,17 @@ uint64_t calc_mask(char *corelist) {
   /* Guard against empty strings or ","  */
   if (!core_name || !strlen(core_name)) {
     fprintf(stderr, "Invalid core name %s\n", core_name);
-    return mask;
+    exit(EXIT_FAILURE);
   }
-  /* Perform the test only after processing the initial input. */
   do {
     char *dash_pos;
     if ((dash_pos = index(core_name, '-')) != NULL) {
-      mask += parse_range(core_name, dash_pos);
+      mask += parse_range(core_name, dash_pos - core_name);
     } else {
       uint64_t core = parse_core(core_name);
       mask += pow(2, core);
     }
+    /* Perform the test only after processing the initial input. */
   } while ((core_name = strtok(NULL, ",")) != NULL);
   return mask;
 }
