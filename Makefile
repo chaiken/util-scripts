@@ -38,7 +38,14 @@ hex2dec_test: hex2dec dec2hex
 cpumask: cpumask.c
 	$(CC) $(CFLAGS) $(LDFLAGS) -o cpumask cpumask.c -lm
 
-# The test crashes ASAN.
+# How to crash ASAN:
+# Comment out the stanza below.
+# Change
+#	$(CVALGRINDFLAGS) $(LDVALGRINDFLAGS) -fsanitize=undefined
+# to
+# 	$(CFLAGS) $(LDFLAGS)
+# make cpumask_test
+# ./cpumask_test
 cpumask_testsuite.o: cpumask_testsuite.cc
 	$(CPPCC) -isystem $(GTEST_HEADERS) $(CVALGRINDFLAGS) -fsanitize=undefined -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o"$@" "$<"
 
