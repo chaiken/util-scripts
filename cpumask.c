@@ -92,6 +92,7 @@ uint64_t calc_mask(char *corelist) {
   return mask;
 }
 
+#ifndef TESTING
 int main(int argc, char *argv[]) {
   if ((argc < 2) || (!index(argv[1], ','))) {
     usage();
@@ -102,3 +103,4 @@ int main(int argc, char *argv[]) {
 
   exit(EXIT_SUCCESS);
 }
+#endif
