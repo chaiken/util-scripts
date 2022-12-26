@@ -70,10 +70,15 @@ uint64_t parse_range(const char *core_name, const size_t dash_offset) {
 }
 
 /* Perform the calculation based on the full input string. */
-uint64_t calc_mask(char *corelist) {
+uint64_t calc_mask(const char *corelist) {
   uint64_t mask = 0U;
+  char *templist = strndup(corelist, strlen(corelist));
+  if (!templist) {
+    fprintf(stderr, "Out of memory.\n");
+    exit(EXIT_FAILURE);
+  }
   /* Initialize strtok(). */
-  char *core_name = strtok(corelist, ",");
+  char *core_name = strtok(templist, ",");
   /* Guard against empty strings or ","  */
   if (!core_name || !strlen(core_name)) {
     fprintf(stderr, "Invalid core name %s\n", core_name);
@@ -89,6 +94,7 @@ uint64_t calc_mask(char *corelist) {
     }
     /* Perform the test only after processing the initial input. */
   } while ((core_name = strtok(NULL, ",")) != NULL);
+  free(templist);
   return mask;
 }
 
