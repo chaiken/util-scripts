@@ -53,7 +53,8 @@ uint64_t parse_range(const char *core_name, const size_t dash_offset) {
     fprintf(stderr, "Out of memory.\n");
     exit(EXIT_FAILURE);
   }
-  if (!strlen(range_start) || !strlen(range_end)) {
+  if (!strlen(range_start) || !strlen(range_end) || !isdigit(*range_start) ||
+      !isdigit(*range_end)) {
     fprintf(stderr, "Illegal range endpoints %s and %s.\n", range_start,
             range_end);
     exit(EXIT_FAILURE);
