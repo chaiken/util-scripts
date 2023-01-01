@@ -1,0 +1,17 @@
+#http://git.661346.n2.nabble.com/PATCH-Document-escaping-of-special-characters-in-gitignore-files-td5891969.html
+#  - A line starting with # serves as a comment.
+#   Use `\#` for a literal # character starting filename.
+\#
+*~
+*.save
+*.o
+*.P
+*.gz
+*.bz2
+*.zip
+*.tar
+*.so
+*.a
+cscope*
+config.*
+.gdb_history
