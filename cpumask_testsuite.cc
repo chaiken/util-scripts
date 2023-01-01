@@ -10,7 +10,7 @@
 
 #include "cpumask.c"
 
-TEST(SimpleCpuMaskTest, ParseSingleCore) { ASSERT_EQ(3, parse_core("3,")); }
+TEST(SimpleCpuMaskTest, ParseSingleCore) { ASSERT_EQ(3U, parse_core("3,")); }
 
 TEST(SimpleCpuMaskTest, BadCore) {
   EXPECT_EXIT(parse_core(","), testing::ExitedWithCode(1),
