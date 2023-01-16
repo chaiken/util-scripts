@@ -21,6 +21,23 @@ TEST(SimpleCpuMaskTest, BadCore) {
               "Illegal core value");
 }
 
+// The caller, parse_range(), has already stripped the trailing comma.
+TEST(SimpleCpuMaskTest, GetStride) {
+  // Single-digit stride.
+  EXPECT_EQ(2U, get_stride("0-3:2", 3U));
+  // Double-digit stride.
+  EXPECT_EQ(10U, get_stride("0-50:10", 4U));
+  // Invalid stride specifications result in fallback to default value of 1U.
+  // First empty strides.
+  EXPECT_EQ(1U, get_stride("0-3:,", 3U));
+  EXPECT_EQ(1U, get_stride("0-3::,", 3U));
+  EXPECT_EQ(1U, get_stride("0-3::2", 3U));
+  EXPECT_EQ(1U, get_stride(":", 0U));
+  EXPECT_EQ(1U, get_stride(":0-3", 0U));
+  // Stride must come last.
+  EXPECT_EQ(1U, get_stride("2:0-3", 1U));
+}
+
 TEST(SimpleCpuMaskTest, ParseRange) {
   /*
     clang-format off
@@ -46,13 +63,23 @@ AddressSanitizer:DEADLYSIGNAL
    clang-format on
   */
   // works with single-digit delimiters
-  EXPECT_EQ(3, parse_range("0-1,", 1U));
+  EXPECT_EQ(3, parse_range("0-1", 1U));
   // works with multi-digit delimiters
   EXPECT_EQ((1 << 10) + (1 << 11), parse_range("10-11,", 2U));
   // Empty range.
-  EXPECT_EQ(0, parse_range("1-0,", 1U));
+  EXPECT_EQ(0, parse_range("1-0", 1U));
   // Single-core equivalent.
-  EXPECT_EQ(2, parse_range("1-1,", 1U));
+  EXPECT_EQ(2, parse_range("1-1", 1U));
+  // With stride, from "man taskset":
+  uint64_t sum = 0UL;
+  for (uint64_t i = 0UL; i <= 10UL; i += 2UL) {
+    sum += (1 << i);
+  }
+  EXPECT_EQ(sum, parse_range("0-10:2", 1U));
+  // Range too large, so only starting core is evaluated.
+  EXPECT_EQ(1UL, parse_range("0-10:100", 1U));
+  // Stride will be set to default 1U.
+  EXPECT_EQ(parse_range("0-5:1", 1U), parse_range("0-5:x", 1U));
 }
 
 TEST(SimpleCpuMaskTest, BadRanges) {
@@ -82,6 +109,8 @@ TEST(SimpleCpuMaskTest, CalcMask) {
   // Ranges plus single cores.
   EXPECT_EQ(3 + (1 << 10), calc_mask(std::string("0-1,10,").c_str()));
   EXPECT_EQ(3 + (1 << 10), calc_mask(std::string("10,0-1,").c_str()));
+  // With stride.
+  EXPECT_EQ(5, calc_mask(std::string("0-3:2,").c_str()));
   // Examples from "man taskset".
   EXPECT_EQ(1, calc_mask(std::string("0,").c_str()));
   EXPECT_EQ(3, calc_mask(std::string("0-1,").c_str()));

@@ -120,9 +120,7 @@ uint64_t parse_range(const char *core_names, const size_t dash_offset) {
     exit(EXIT_FAILURE);
   }
 
-  /* TODO: more than one stride per range is an error.  A stride without a range
-   * is an error. */
-  char *stride_start;
+  const char *stride_start;
   uint64_t stride = 1U;
   if (NULL != (stride_start = index(core_names, ':'))) {
     const size_t colon_pos = stride_start - core_names;
