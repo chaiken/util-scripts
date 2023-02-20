@@ -30,28 +30,39 @@ TEST(SimpleClassificationTest, ThreadAffinityIsSettable) {
   flagstr = read_thread_stat("procfs/14/stat").value();
   // Googletest does not consider 0 == false.
   EXPECT_EQ(0, thread_affinity_is_settable(flagstr));
+  // Thread name contains spaces.
+  flagstr = read_thread_stat("procfs/140857/stat").value();
+  EXPECT_EQ(1, thread_affinity_is_settable(flagstr));
 }
 
 TEST(SimpleClassificationTest, ReadProcfs) {
-  // The set ctor must take the comparator as a parameter.
+  // The set ctor must take the comparator as a parameter; otherwise insert()
+  // and emplace() will trigger a SEGV.
   //  https://stackoverflow.com/questions/2620862/using-custom-stdset-comparator
   std::set<struct tid_data, decltype(tid_data_compare) *> tset{
       tid_data_compare};
-  tset.emplace(1422, false, "foo");
-  read_thread_data(tset, "procfs");
-  ASSERT_EQ(2U, tset.size());
-  EXPECT_EQ(tset.begin(), tset.find(tid_data(14, false, "ksoftirqd/0")));
-  EXPECT_EQ(false, tset.begin()->is_settable);
-  EXPECT_EQ("ksoftirqd/0", tset.begin()->thread_name);
-  EXPECT_EQ(++tset.begin(), tset.find(tid_data(1422, false, "foo")));
-  EXPECT_EQ(false, (++tset.begin())->is_settable);
-  EXPECT_EQ("foo", (++tset.begin())->thread_name);
+  tset.emplace(21, false, "kworker");
+
+  std::array<pid_t, 5U> tids{{10851, 140857, 14, 21, 1422}};
+  std::array<uint16_t, 5U> is_settable{{1, 1, 0, 0, 1}};
+  std::array<std::string, 5U> thread_name{{"(sd-pam)", "Isolated Web Co",
+                                           "ksoftirqd/0", "kworker",
+                                           "unattended-upgr"}};
+  read_thread_data(tset, "procfs", true);
+
+  ASSERT_EQ(5U, tset.size());
+  uint16_t index = 0U;
+  for (const auto &thread : tset) {
+    EXPECT_EQ(tids.at(index), thread.tid);
+    EXPECT_EQ(is_settable.at(index), thread.is_settable);
+    EXPECT_EQ(thread_name.at(index), thread.thread_name);
+    index++;
+  }
   // Fails because only the set key is compared.
-  // EXPECT_EQ(tset.end(), tset.find(tid_data(1422, true, "unattended-upgr")));
+  // EXPECT_EQ(tset.end(), tset.find(tid_data(21, false, "unattended-upgr")));
   EXPECT_EQ(tset.find(tid_data(1422, true, "unattended-upgr")),
-            tset.find(tid_data(1422, false, "foo")));
-  EXPECT_EQ(tset.end(), tset.find(tid_data(0, false, "ksoftirqd/0")));
-  EXPECT_EQ(tset.end(), tset.find(tid_data(1, false, "ksoftirqd/0")));
+            tset.find(tid_data(21, false, "unattended-upgr")));
+  EXPECT_EQ(tset.end(), tset.find(tid_data(14, false, "systemd")));
 }
 
 } // namespace local_testing

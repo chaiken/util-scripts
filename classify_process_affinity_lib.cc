@@ -40,8 +40,13 @@ namespace process_affinity {
 namespace {
 
 std::string extract_thread_name(const std::string &thread_stat) {
-  const size_t name_start = thread_stat.find('(') + 1U;
-  const size_t name_end = thread_stat.find(')') - 1U;
+  size_t name_start = thread_stat.find('(') + 1U;
+  size_t name_end = thread_stat.find(')') - 1U;
+  // Some thread names end with ')', because they hate us.
+  if ((')' == thread_stat.at(name_end + 1U)) &&
+      (')' == thread_stat.at(name_end + 2U))) {
+    name_end++;
+  }
   return thread_stat.substr(name_start, (name_end - name_start) + 1U);
 }
 
@@ -50,7 +55,11 @@ std::string extract_thread_name(const std::string &thread_stat) {
 std::optional<std::string>
 extract_thread_flags(const std::string &thread_stat) {
   std::string affinity_str{};
-  size_t space_pos = thread_stat.find(" ");
+  // The name string is enclosed in parentheses.  Go past the following space.
+  size_t space_pos = thread_stat.find(")") + 1U;
+  if (')' == thread_stat.at(space_pos)) {
+    space_pos++;
+  }
   size_t start_pos = space_pos + 1U;
   size_t field_num = 1U; // First space is already located.
   std::string remainder{};
@@ -66,7 +75,6 @@ extract_thread_flags(const std::string &thread_stat) {
   }
   // Find the space that terminates the flags string.
   space_pos = remainder.find(" ");
-  // Skip first character, which is a space.
   affinity_str = remainder.substr(0U, space_pos);
   if (isdigit(*affinity_str.begin()) &&
       (field_num == PF_NO_SET_AFFINITY_POSITION)) {
@@ -79,7 +87,7 @@ extract_thread_flags(const std::string &thread_stat) {
 } // namespace
 
 bool tid_data_compare(const struct tid_data &a, const struct tid_data &b) {
-  return a.tid < b.tid;
+  return a.thread_name < b.thread_name;
 }
 
 std::optional<std::string> read_thread_stat(const std::string &pathname) {
@@ -88,6 +96,7 @@ std::optional<std::string> read_thread_stat(const std::string &pathname) {
   std::filebuf *contents = statstream.rdbuf();
   if (statstream.good()) {
     char ch = contents->sgetc();
+    // EOF detection works with actual /proc files.
     while (ch != EOF) {
       statstring += ch;
       ch = contents->snextc();
@@ -111,7 +120,7 @@ std::optional<bool> thread_affinity_is_settable(const std::string &stat_str) {
 
 void read_thread_data(
     std::set<struct tid_data, decltype(tid_data_compare) *> &tid_set,
-    const std::string &procfs_top) {
+    const std::string &procfs_top, bool verbose) {
   fs::path proc_path(procfs_top);
   for (const fs::directory_entry &entry : fs::directory_iterator(proc_path)) {
     std::string tid_string = entry.path().stem().string();
@@ -126,16 +135,16 @@ void read_thread_data(
     std::optional<std::string> stat_str =
         read_thread_stat(procfs_top + "/" + tid_string + "/stat");
     if (stat_str.has_value()) {
+      std::string thread_name = extract_thread_name(stat_str.value());
       std::optional<bool> is_movable =
           thread_affinity_is_settable(stat_str.value());
       if (!is_movable.has_value()) {
-        break;
+        continue;
       }
-      std::string thread_name = extract_thread_name(stat_str.value());
       std::pair<std::set<struct tid_data>::iterator, bool> result =
           tid_set.emplace(tid, is_movable.value(), thread_name);
-      if (!result.second) {
-        std::cerr << "TID " << tid_string << " already present in set."
+      if ((!result.second) && verbose) {
+        std::cerr << "Thread " << thread_name << " already present in set."
                   << std::endl;
       }
     }
