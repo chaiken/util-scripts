@@ -111,4 +111,4 @@ classify_process_affinity_lib_test: classify_process_affinity_lib.cc classify_pr
 	$(CPPCC) $(CPPFLAGS) $(LDFLAGS)  classify_process_affinity_lib.cc classify_process_affinity_lib_test.cc  $(GTESTLIBS) -o $@
 
 clean:
-	/bin/rm -rf *.o *.d *~ hex2dec dec2hex cdecl watch_file watch_one_file cpumask cpumask_gtest cpumask_ctest *coverage *gcda *gcno *info *html *valgrind *png util-scripts
+	/bin/rm -rf *.o *.d *~ hex2dec dec2hex cdecl watch_file watch_one_file cpumask cpumask_gtest cpumask_ctest classify_process_affinity_lib_test *coverage *gcda *gcno *info *css *html *valgrind *png util-scripts
