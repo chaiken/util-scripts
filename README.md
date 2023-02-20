@@ -1,4 +1,6 @@
-### Here are some simple C programs that are useful to systems programmers.
+### Here are some simple C and C++ programs that are useful to systems programmers.
+
+0. _classify\_process\_affinity\_lib_ provides C++ functions that determine whether "man 1 tasket," or, equivalently, "man 2 sched_setaffinity" is able to modify the CPU affinity of a given Linux thread.    Examples of threads  that are not pinnable are per-CPU threads like ksoftirqd/* and kworkers.
 
 1. _cpumask_ calculates hexadecimal cpumasks that are useful with, for example, /usr/bin/taskset from [util-linux](git://git.kernel.org/pub/scm/utils/util-linux/util-linux.git).
 
