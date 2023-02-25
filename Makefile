@@ -23,6 +23,9 @@ CATCHLIBPATH = $(CATCH_DIR)/build/src
 CATCHLIBS = $(CATCHLIBPATH)/libCatch2Main.a  $(CATCHLIBPATH)/libCatch2.a 
 LDCATCHFLAGS =  $(LDBASICFLAGS) -L$(CATCHLIBPATH)
 
+CPPLAGS-NOTEST= -std=c++17 -ggdb -Wall -Wextra -Werror -g -O0 -fno-inline -fsanitize=address,undefined
+LDFLAGS-NOTEST= -ggdb -g -fsanitize=address
+
 # “–coverage” is a synonym for-fprofile-arcs, -ftest-coverage(compiling) and
 # -lgcov(linking).
 COVERAGE_EXTRA_FLAGS = --coverage
@@ -109,6 +112,9 @@ cpumask_ctest: cpumask_ctest.o cpumask.c
 
 classify_process_affinity_lib_test: classify_process_affinity_lib.cc classify_process_affinity.h classify_process_affinity_lib_test.cc
 	$(CPPCC) $(CPPFLAGS) $(LDFLAGS)  classify_process_affinity_lib.cc classify_process_affinity_lib_test.cc  $(GTESTLIBS) -o $@
+
+classify_process_affinity: classify_process_affinity.cc classify_process_affinity_lib.cc classify_process_affinity.h
+	$(CPPCC) $(CPPFLAGS-NOTEST) $(LDFLAGS-NOTEST)  classify_process_affinity_lib.cc classify_process_affinity.cc -o $@
 
 clean:
 	/bin/rm -rf *.o *.d *~ hex2dec dec2hex cdecl watch_file watch_one_file cpumask cpumask_gtest cpumask_ctest classify_process_affinity_lib_test *coverage *gcda *gcno *info *css *html *valgrind *png util-scripts
