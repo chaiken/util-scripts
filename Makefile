@@ -67,7 +67,7 @@ CLANG_TIDY_CHECKS=bugprone,core,cplusplus,cppcoreguidelines,deadcode,modernize,p
 CC = /usr/bin/gcc
 CPPCC = /usr/bin/g++
 
-all: cdecl hex2dec dec2hex cpumask
+all: cdecl hex2dec dec2hex cpumask endian
 
 hex2dec: hex2dec.c
 	${CC} ${CFLAGS} hex2dec.c -o hex2dec -lm
@@ -83,6 +83,9 @@ cdecl_test: cdecl
 
 hex2dec_test: hex2dec dec2hex
 	./hex2dec 0xFFFFFF | ./dec2hex
+
+endian: endian.c
+	$(CC) $(CFLAGS) $(LDFLAGS) -o endian endian.c -lm
 
 cpumask: cpumask.c
 	$(CC) $(CFLAGS) $(LDFLAGS) -o cpumask cpumask.c -lm
