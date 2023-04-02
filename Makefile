@@ -87,6 +87,9 @@ hex2dec_test: hex2dec dec2hex
 endian: endian.c
 	$(CC) $(CFLAGS) $(LDFLAGS) -o endian endian.c -lm
 
+endian-cpp-valgrind: endian-cpp.cc
+	$(CPPCC) $(CVALGRINDFLAGS) $(LDVALGRINDFLAGS) endian-cpp.cc -o endian-cpp-valgrind -lm
+
 cpumask: cpumask.c
 	$(CC) $(CFLAGS) $(LDFLAGS) -o cpumask cpumask.c -lm
 
