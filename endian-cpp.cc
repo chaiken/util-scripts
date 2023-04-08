@@ -23,17 +23,14 @@ bool is_little_endian2(const unsigned val, const char byteval) {
 }
 
 template <std::size_t HOST_INTSIZE> bool is_big_endian(const unsigned val) {
-  switch (HOST_INTSIZE) {
-  case 2U:
+  if constexpr (HOST_INTSIZE == 2U)
     return (htobe16(val) == val);
-  case 4U:
+  if constexpr (HOST_INTSIZE == 4U)
     return (htobe32(val) == val);
-  case 8U:
+  if constexpr (HOST_INTSIZE == 8U)
     return (htobe64(val) == val);
-  default:
-    std::cerr << "Unknown architecture";
-    return false;
-  }
+  std::cerr << "Unknown architecture" << std::endl;
+  return false;
 }
 
 int main() {
