@@ -67,7 +67,7 @@ CLANG_TIDY_CHECKS=bugprone,core,cplusplus,cppcoreguidelines,deadcode,modernize,p
 CC = /usr/bin/gcc
 CPPCC = /usr/bin/g++
 
-all: cdecl hex2dec dec2hex cpumask endian
+all: cdecl hex2dec dec2hex cpumask endian endian-cpp
 
 hex2dec: hex2dec.c
 	${CC} ${CFLAGS} hex2dec.c -o hex2dec -lm
@@ -87,8 +87,14 @@ hex2dec_test: hex2dec dec2hex
 endian: endian.c
 	$(CC) $(CFLAGS) $(LDFLAGS) -o endian endian.c -lm
 
-endian-cpp-valgrind: endian-cpp.cc
-	$(CPPCC) $(CVALGRINDFLAGS) $(LDVALGRINDFLAGS) endian-cpp.cc -o endian-cpp-valgrind -lm
+endian-cpp: endian.h endian_lib.cc endian-cpp.cc
+	$(CPPCC) $(CPPFLAGS) $(LDFLAGS) endian_lib.cc endian-cpp.cc -o endian-cpp
+
+endian_lib_test: endian.h endian_lib.cc endian_lib_test.cc
+	$(CPPCC) $(CPPFLAGS) $(LDFLAGS) endian_lib.cc endian_lib_test.cc $(GTESTLIBS) -o $@
+
+endian-cpp-valgrind: endian.h endian_lib.cc endian-cpp.cc
+	$(CPPCC) $(CVALGRINDFLAGS) $(LDVALGRINDFLAGS) endian_lib.cc endian-cpp.cc -o endian-cpp-valgrind -lm
 
 cpumask: cpumask.c
 	$(CC) $(CFLAGS) $(LDFLAGS) -o cpumask cpumask.c -lm
