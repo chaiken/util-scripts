@@ -96,11 +96,13 @@ std::optional<std::string> read_thread_stat(const std::string &pathname) {
   std::filebuf *contents = statstream.rdbuf();
   if (statstream.good()) {
     char ch = contents->sgetc();
-    // EOF detection works with actual /proc files.
-    while (ch != EOF) {
+    // EOF detection works with actual /proc files on x86_64 but not on ARM64.
+    // Newline detection works on both.
+    while ((ch != EOF) && (ch != '\n')) {
       statstring += ch;
       ch = contents->snextc();
     }
+    statstring += '\n';
   } else {
     std::cerr << "Unable to read procfs file " + pathname << std::endl;
   }
