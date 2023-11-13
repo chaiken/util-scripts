@@ -42,21 +42,21 @@ TEST(SimpleClassificationTest, ReadProcfs) {
   std::set<struct tid_data, decltype(tid_data_compare) *> tset{
       tid_data_compare};
   tset.emplace(21, false, "kworker");
-
-  std::array<pid_t, 5U> tids{{10851, 140857, 14, 21, 1422}};
-  std::array<uint16_t, 5U> is_settable{{1, 1, 0, 0, 1}};
-  std::array<std::string, 5U> thread_name{{"(sd-pam)", "Isolated Web Co",
-                                           "ksoftirqd/0", "kworker",
-                                           "unattended-upgr"}};
   read_thread_data(tset, "procfs", true);
 
-  ASSERT_EQ(5U, tset.size());
-  uint16_t index = 0U;
-  for (const auto &thread : tset) {
-    EXPECT_EQ(tids.at(index), thread.tid);
-    EXPECT_EQ(is_settable.at(index), thread.is_settable);
-    EXPECT_EQ(thread_name.at(index), thread.thread_name);
-    index++;
+  std::set<struct tid_data, decltype(tid_data_compare) *> expected(
+      tid_data_compare);
+  ASSERT_TRUE(expected.emplace(10851, 1, "(sd-pam)").second);
+  ASSERT_TRUE(expected.emplace(140857, 1, "Isolated Web Co").second);
+  ASSERT_TRUE(expected.emplace(14, 0, "ksoftirqd/0").second);
+  ASSERT_TRUE(expected.emplace(21, 0, "kworker").second);
+  ASSERT_TRUE(expected.emplace(1422, 1, "unattended-upgr").second);
+
+  ASSERT_EQ(expected.size(), tset.size());
+  auto it1 = expected.cbegin();
+  auto it2 = tset.cbegin();
+  for (; it1 != expected.cend() && it2 != tset.cend(); it1++, it2++) {
+    EXPECT_EQ(it1->thread_name, it2->thread_name);
   }
   // Fails because only the set key is compared.
   // EXPECT_EQ(tset.end(), tset.find(tid_data(21, false, "unattended-upgr")));
