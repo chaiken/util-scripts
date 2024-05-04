@@ -134,8 +134,11 @@ timerlat_load_lib_test: timerlat_load_lib.cc timerlat_load.h timerlat_load_lib_t
 timerlat_load: timerlat_load_lib.cc timerlat_load.h timerlat_load.cc
 	$(CPPCC) $(CPPFLAGS) $(LDFLAGS)  timerlat_load_lib.cc timerlat_load.cc -o $@
 
+timerlat_pipe_load_lib_test: timerlat_pipe_load_lib.cc timerlat_pipe_load.h timerlat_pipe_load_lib_test.cc
+	$(CPPCC) $(CPPFLAGS) $(LDFLAGS)  timerlat_pipe_load_lib.cc timerlat_pipe_load_lib_test.cc  $(GTESTLIBS) -lpthread -o $@
+
 %_lib_test-clangtidy: %_lib_test.cc %_lib.cc %.h
 	$(CLANG_TIDY_BINARY) $(CLANG_TIDY_OPTIONS) -checks=$(CLANG_TIDY_CHECKS) $^ -- $(CLANG_TIDY_CLANG_OPTIONS)
 
 clean:
-	/bin/rm -rf *.o *.d *~ hex2dec dec2hex cdecl watch_file watch_one_file cpumask cpumask_gtest cpumask_ctest classify_process_affinity_lib_test classify_process_affinity timerlat_load_lib_test timerlat_load *coverage *gcda *gcno *info *css *html *valgrind *png util-scripts
+	/bin/rm -rf *.o *.d *~ hex2dec dec2hex cdecl watch_file watch_one_file cpumask cpumask_gtest cpumask_ctest classify_process_affinity_lib_test classify_process_affinity timerlat_pipe_load_lib_test timerlat_load *coverage *gcda *gcno *info *css *html *valgrind *png util-scripts
