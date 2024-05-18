@@ -20,24 +20,24 @@ TEST(TimerlatLoadTest, GetNs) {
 }
 
 TEST(TimerLatLoadTest, SpawnResponder) {
-  const std::string fifopath = create_fifo_path();
-  ASSERT_FALSE(fifopath.empty());
-  ASSERT_EQ(0, mkfifoat(-1 /*NOT USED*/, fifopath.c_str(), 0777));
+  FifoTimer ft;
+  EXPECT_NE(-1, ft.read_fd());
 
   struct stat statbuf {};
-  ASSERT_EQ(0, stat(fifopath.c_str(), &statbuf));
+  ASSERT_EQ(0, stat(ft.fifopath().c_str(), &statbuf));
   ASSERT_NE(0UL, statbuf.st_ino);
 
-  const pid_t child_fd = spawn_responding_thread(fifopath);
-  EXPECT_GT(child_fd, 0);
-  int read_fd = open(fifopath.c_str(), O_RDONLY + O_NONBLOCK);
+  int read_fd = open(ft.fifopath().c_str(), O_RDONLY + O_NONBLOCK);
   ASSERT_GT(read_fd, 0);
 
   usleep(10 * 1000);
 
   char pipe_buffer[PIPE_BUF_SIZE + 1U];
   ssize_t bytes_read = read(read_fd, pipe_buffer, PIPE_BUF_SIZE);
+  std::cout << bytes_read << " bytes read from pipe: " << pipe_buffer
+            << std::endl;
   EXPECT_GT(bytes_read, 0);
+  ft.stop();
 }
 
 } // namespace local_testing

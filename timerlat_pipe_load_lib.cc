@@ -1,10 +1,6 @@
 #include "timerlat_pipe_load.h"
 
 #include <cassert>
-#include <fcntl.h>
-#include <pthread.h>
-#include <sys/stat.h>
-#include <unistd.h>
 
 #include <cstring>
 #include <fstream>
@@ -20,33 +16,31 @@ std::optional<uint64_t> get_ns() {
   return convert_ns(ts);
 }
 
-void *responding_fn(void *arg) {
-  char *fifopath = static_cast<char *>(arg);
-  assert(nullptr != fifopath);
-  int write_fd = open(fifopath, O_WRONLY | O_NONBLOCK);
-  free(arg);
+void responding_fn(const std::string &fifopath) {
+  int write_fd =
+      openat(-1 /*NOT USED*/, fifopath.c_str(), O_WRONLY | O_NONBLOCK);
   if (-1 == write_fd) {
-    std::cerr << "Unable to open FIFO for writing: " << strerror(errno)
-              << std::endl;
-    return NULL;
+    std::cerr << "Unable to open FIFO " << fifopath
+              << " for writing: " << strerror(errno) << std::endl;
+    std::cerr.flush();
+    return;
   }
-  while (1) {
+  size_t ctr = 0;
+  while (ctr++ < LIMIT) {
     std::optional<uint64_t> ns = get_ns();
     if (!ns.has_value()) {
-      return NULL;
+      return;
     }
     std::string timestr = std::to_string(ns.value());
-    char *ts = strdup(timestr.c_str());
-    ssize_t bytes_read =
-        write(write_fd, static_cast<const void *>(ts), timestr.length());
-    free(ts);
+    //    char *ts = strdup(timestr.c_str());
+    ssize_t bytes_read = write(write_fd, timestr.c_str(), timestr.length());
+    //        write(write_fd, static_cast<const void *>(ts), timestr.length());
     if ((-1 == bytes_read) && ((EAGAIN != errno) || (EWOULDBLOCK != errno))) {
       std::cerr << "Unable to write pipe: " << strerror(errno) << std::endl;
       break;
     }
   }
   close(write_fd);
-  return NULL;
 }
 
 std::string create_fifo_path() {
@@ -60,73 +54,35 @@ std::string create_fifo_path() {
   return (std::string{path} + std::string{"/myfifo"});
 }
 
-pid_t spawn_responding_thread(const std::string &fifopath) {
-  pthread_t tid;
-  // Freed by thread.
-  char *temp = strdup(fifopath.c_str());
-  if (-1 ==
-      pthread_create(&tid, nullptr, responding_fn, static_cast<void *>(temp))) {
-    std::cerr << "Unable to create pthread: " << strerror(errno) << std::endl;
-    free(temp);
-    return -1;
-  }
-  std::cout << "Spawned TID " << tid << std::endl;
-  // "Sometimes, we don’t care about the thread’s return status; we simply want
-  // the system to automatically clean up and remove the thread when it
-  // terminates."
-  pthread_detach(tid);
-  return tid;
-}
-
-void calculate_roundtrip_delays(std::ifstream &tlfs) {
+void FifoTimer::calculate_roundtrip_delays(std::ifstream &tlfs) {
   if (!tlfs.good()) {
     return;
   }
-  const std::string fifopath = create_fifo_path();
-  if (-1 == mkfifoat(-1 /*NOT USED*/, fifopath.c_str(), 0777)) {
-    std::cerr << "Unable to create FIFO: " << strerror(errno) << std::endl;
-    return;
-  }
-  const pid_t child = spawn_responding_thread(fifopath);
-  if (-1 == child) {
-    return;
-  }
-  int read_fd = open(fifopath.c_str(), O_RDONLY | O_NONBLOCK);
-  if (-1 == read_fd) {
-    std::cerr << "Unable to open FIFO for reading: " << strerror(errno)
-              << std::endl;
-  }
-
   while (1) {
     // Tickle the timerlat file descriptor.
     std::string trash(2, '\0');
     tlfs.read(&trash[0], 1);
 
     char pipe_buffer[PIPE_BUF_SIZE + 1U];
-    ssize_t bytes_read = read(read_fd, pipe_buffer, PIPE_BUF_SIZE);
+    ssize_t bytes_read = read(read_fd_, pipe_buffer, PIPE_BUF_SIZE);
     if (errno && (EAGAIN != errno) && (EWOULDBLOCK != errno)) {
       std::cerr << "Pipe read failed: " << strerror(errno) << std::endl;
       break;
     }
     uint64_t then = 0;
     if (PIPE_BUF_SIZE == bytes_read) {
-      struct timespec ts;
-      memcpy(&ts, pipe_buffer, PIPE_BUF_SIZE);
-      then = convert_ns(ts);
+      memcpy(&then, pipe_buffer, PIPE_BUF_SIZE);
     }
     std::optional<uint64_t> now = get_ns();
-    if (!now.has_value()) {
+    if ((!now.has_value()) || (!then)) {
       break;
     }
     uint64_t delay = 0U;
-    if (then) {
-      delay = now.value() - then;
-    }
+    delay = now.value() - then;
     if (delay > THRESHOLD) {
       std::cout << std::to_string(delay) + " ns" << std::endl;
     }
   }
-  close(read_fd);
 }
 
 } // namespace timerlat_load
