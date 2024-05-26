@@ -4,8 +4,14 @@
 
 #include <cstring>
 #include <fstream>
+#include <iomanip>
+#include <sstream>
 
 namespace timerlat_load {
+
+using namespace std::chrono_literals;
+
+void wait_one_ms() { std::this_thread::sleep_for(1ms); }
 
 std::optional<uint64_t> get_ns() {
   struct timespec ts;
@@ -31,13 +37,20 @@ void responding_fn(const std::string &fifopath) {
     if (!ns.has_value()) {
       return;
     }
-    std::string timestr = std::to_string(ns.value());
-    //    char *ts = strdup(timestr.c_str());
-    ssize_t bytes_read = write(write_fd, timestr.c_str(), timestr.length());
-    //        write(write_fd, static_cast<const void *>(ts), timestr.length());
-    if ((-1 == bytes_read) && ((EAGAIN != errno) || (EWOULDBLOCK != errno))) {
+    std::ostringstream timestr;
+    timestr << std::hex << ns.value() << std::dec;
+    if (!timestr.str().length()) {
+      std::cerr << "timestring is empty!" << std::endl;
+    }
+    ssize_t bytes_written =
+        write(write_fd, timestr.str().c_str(), timestr.str().length());
+    if ((-1 == bytes_written) &&
+        ((EAGAIN != errno) || (EWOULDBLOCK != errno))) {
       std::cerr << "Unable to write pipe: " << strerror(errno) << std::endl;
       break;
+    }
+    if (0 == bytes_written) {
+      std::cerr << "Wrote 0 bytes from : " << timestr.str() << std::endl;
     }
   }
   close(write_fd);
@@ -64,14 +77,20 @@ void FifoTimer::calculate_roundtrip_delays(std::ifstream &tlfs) {
     tlfs.read(&trash[0], 1);
 
     char pipe_buffer[PIPE_BUF_SIZE + 1U];
-    ssize_t bytes_read = read(read_fd_, pipe_buffer, PIPE_BUF_SIZE);
-    if (errno && (EAGAIN != errno) && (EWOULDBLOCK != errno)) {
+    ifs.readsome(pipe_buffer, PIPE_BUF_SIZE);
+    if (!ifs.good()) {
       std::cerr << "Pipe read failed: " << strerror(errno) << std::endl;
-      break;
+      if ((EAGAIN != errno) && (EWOULDBLOCK != errno)) {
+        break;
+      }
+    }
+    size_t bytes_read = ifs.gcount();
+    if (!bytes_read) {
+      continue;
     }
     uint64_t then = 0;
-    if (PIPE_BUF_SIZE == bytes_read) {
-      memcpy(&then, pipe_buffer, PIPE_BUF_SIZE);
+    if (0 < bytes_read) {
+      memcpy(&then, pipe_buffer, PIPE_BUF_SIZE - 1U);
     }
     std::optional<uint64_t> now = get_ns();
     if ((!now.has_value()) || (!then)) {

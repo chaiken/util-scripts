@@ -16,26 +16,31 @@
 #include <cstdint>
 #include <cstring>
 #include <ctime>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <optional>
 #include <thread>
+
+namespace timerlat_load {
 
 // The directory in which the timerlat file descriptor opened by RTLA appears.
 constexpr char TRACETLD[] = "/sys/kernel/tracing/osnoise/per_cpu/cpu";
 // The core count on both of my test systems.
 constexpr uint16_t CORES = 8U;
 // Size of container which holds a uint64_t timestamp from the pipe read.
-constexpr size_t PIPE_BUF_SIZE = 8;
+constexpr size_t PIPE_BUF_SIZE = sizeof(uint64_t);
 // 1 millisecond.
 constexpr size_t THRESHOLD = 100 * 100 * 100;
 constexpr size_t LIMIT = 100;
 
-namespace timerlat_load {
+namespace fs = std::filesystem;
 
 constexpr uint64_t convert_ns(const struct timespec &ts) {
   return (1e9 * ts.tv_sec) + ts.tv_nsec;
 }
+
+void wait_one_ms();
 
 std::string create_fifo_path();
 void responding_fn(const std::string &fifopath);
@@ -50,27 +55,26 @@ public:
     std::cout << "Created fifo at " << fifopath_ << std::endl;
 
     responder_ = std::thread([this]() { responding_fn(this->fifopath_); });
-    read_fd_ = open(fifopath_.c_str(), O_RDONLY | O_NONBLOCK);
-    if (-1 == read_fd_) {
+    ifs = std::ifstream{fifopath_, std::ifstream::in};
+    if (!ifs.good()) {
       std::cerr << "Unable to open FIFO for reading: " << strerror(errno)
                 << std::endl;
     }
   }
   void calculate_roundtrip_delays(std::ifstream &tlfs);
   std::string fifopath() const { return fifopath_; }
-  int read_fd() const { return read_fd_; }
+  std::ifstream ifs;
   void stop() { responder_.join(); }
 
   ~FifoTimer() {
-    // responder_.join();
-    close(read_fd_);
-    unlink(fifopath_.c_str());
+    stop();
+    ifs.close();
+    fs::remove_all(fs::path(fifopath_).parent_path());
   }
 
 private:
   std::thread responder_;
   const std::string fifopath_;
-  int read_fd_ = -1;
 };
 
 // Get the current CLOCK_MONOTONIC time in ns.
