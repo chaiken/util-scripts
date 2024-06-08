@@ -13,6 +13,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include <chrono>
 #include <cstdint>
 #include <cstring>
 #include <ctime>
@@ -29,15 +30,18 @@ constexpr char TRACETLD[] = "/sys/kernel/tracing/osnoise/per_cpu/cpu";
 // The core count on both of my test systems.
 constexpr uint16_t CORES = 8U;
 // Size of container which holds a uint64_t timestamp from the pipe read.
-constexpr size_t PIPE_BUF_SIZE = sizeof(uint64_t);
+// There are 2 chars per byte in hex representation.
+constexpr size_t PIPE_BUF_SIZE = 2 * sizeof(uint64_t);
 // 1 millisecond.
 constexpr size_t THRESHOLD = 100 * 100 * 100;
 constexpr size_t LIMIT = 100;
 
 namespace fs = std::filesystem;
 
-constexpr uint64_t convert_ns(const struct timespec &ts) {
-  return (1e9 * ts.tv_sec) + ts.tv_nsec;
+constexpr std::chrono::nanoseconds convert_ns(const struct timespec &ts) {
+  std::chrono::duration<int, std::nano> nanosecs{
+      static_cast<int>((1e9 * ts.tv_sec) + ts.tv_nsec)};
+  return nanosecs;
 }
 
 void wait_one_ms();
@@ -76,9 +80,6 @@ private:
   std::thread responder_;
   const std::string fifopath_;
 };
-
-// Get the current CLOCK_MONOTONIC time in ns.
-std::optional<uint64_t> get_ns();
 
 } // namespace timerlat_load
 

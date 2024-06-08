@@ -15,18 +15,6 @@ namespace local_testing {
 constexpr uint64_t ats = 391875376454005;
 constexpr uint64_t bts = 391875376458684;
 
-TEST(TimerlatPipeLoadTest, GetNs) {
-  std::optional<uint64_t> ts0 = get_ns();
-  ASSERT_TRUE(ts0.has_value());
-  ASSERT_TRUE(UINT64_MAX > ts0.value());
-  std::optional<uint64_t> ts1 = get_ns();
-  ASSERT_TRUE(ts1.has_value());
-  ASSERT_TRUE(UINT64_MAX > ts1.value());
-  std::cerr << "First " << std::hex << ts0.value() << " then " << ts1.value()
-            << std::dec << std::endl;
-  EXPECT_GT(ts1.value(), ts0.value());
-}
-
 TEST(TimerlatPipeLoadTest, SpawnResponder) {
   FifoTimer ft;
   EXPECT_TRUE(ft.ifs.good());

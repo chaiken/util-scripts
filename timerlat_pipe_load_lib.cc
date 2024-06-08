@@ -1,7 +1,7 @@
 #include "timerlat_pipe_load.h"
 
 #include <cassert>
-
+#include <charconv>
 #include <cstring>
 #include <fstream>
 #include <iomanip>
@@ -9,18 +9,10 @@
 
 namespace timerlat_load {
 
+using namespace std::chrono;
 using namespace std::chrono_literals;
 
 void wait_one_ms() { std::this_thread::sleep_for(1ms); }
-
-std::optional<uint64_t> get_ns() {
-  struct timespec ts;
-  if (-1 == clock_gettime(CLOCK_MONOTONIC, &ts)) {
-    std::cerr << "Cannot read monotonic time " << strerror(errno) << std::endl;
-    return {};
-  }
-  return convert_ns(ts);
-}
 
 void responding_fn(const std::string &fifopath) {
   int write_fd =
@@ -33,12 +25,10 @@ void responding_fn(const std::string &fifopath) {
   }
   size_t ctr = 0;
   while (ctr++ < LIMIT) {
-    std::optional<uint64_t> ns = get_ns();
-    if (!ns.has_value()) {
-      return;
-    }
+    time_point<steady_clock> tp = steady_clock::now();
+    duration<uint64_t, std::nano> now_ref = tp.time_since_epoch();
     std::ostringstream timestr;
-    timestr << std::hex << ns.value() << std::dec;
+    timestr << std::hex << now_ref.count() << std::dec;
     if (!timestr.str().length()) {
       std::cerr << "timestring is empty!" << std::endl;
     }
@@ -88,18 +78,22 @@ void FifoTimer::calculate_roundtrip_delays(std::ifstream &tlfs) {
     if (!bytes_read) {
       continue;
     }
-    uint64_t then = 0;
+    char buf[PIPE_BUF_SIZE];
     if (0 < bytes_read) {
-      memcpy(&then, pipe_buffer, PIPE_BUF_SIZE - 1U);
+      memcpy(&buf, pipe_buffer, PIPE_BUF_SIZE - 1U);
     }
-    std::optional<uint64_t> now = get_ns();
-    if ((!now.has_value()) || (!then)) {
-      break;
+    uint64_t then{};
+    std::from_chars_result converted =
+        std::from_chars(buf, buf + strlen(buf), then);
+    if (std::errc() != converted.ec) {
+      std::cerr << "Unable to convert time string" << buf << std::endl;
+      continue;
     }
-    uint64_t delay = 0U;
-    delay = now.value() - then;
+    time_point<steady_clock> tp = steady_clock::now();
+    duration<int, std::nano> tp_ref = tp.time_since_epoch();
+    uint64_t delay = tp_ref.count() - then;
     if (delay > THRESHOLD) {
-      std::cout << std::to_string(delay) + " ns" << std::endl;
+      std::cout << std::hex << delay << std::dec << +" ns" << std::endl;
     }
   }
 }
