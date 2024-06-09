@@ -28,7 +28,7 @@ void responding_fn(const std::string &fifopath) {
     time_point<steady_clock> tp = steady_clock::now();
     duration<uint64_t, std::nano> now_ref = tp.time_since_epoch();
     std::ostringstream timestr;
-    timestr << std::hex << now_ref.count() << std::dec;
+    timestr << now_ref.count();
     if (!timestr.str().length()) {
       std::cerr << "timestring is empty!" << std::endl;
     }
@@ -86,14 +86,14 @@ void FifoTimer::calculate_roundtrip_delays(std::ifstream &tlfs) {
     std::from_chars_result converted =
         std::from_chars(buf, buf + strlen(buf), then);
     if (std::errc() != converted.ec) {
-      std::cerr << "Unable to convert time string" << buf << std::endl;
+      std::cerr << "Unable to convert time string " << buf << std::endl;
       continue;
     }
     time_point<steady_clock> tp = steady_clock::now();
     duration<int, std::nano> tp_ref = tp.time_since_epoch();
     uint64_t delay = tp_ref.count() - then;
     if (delay > THRESHOLD) {
-      std::cout << std::hex << delay << std::dec << +" ns" << std::endl;
+      std::cout << std::to_string(delay) << +" ns" << std::endl;
     }
   }
 }

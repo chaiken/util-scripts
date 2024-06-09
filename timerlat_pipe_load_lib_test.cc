@@ -12,9 +12,6 @@ using namespace std;
 namespace timerlat_load {
 namespace local_testing {
 
-constexpr uint64_t ats = 391875376454005;
-constexpr uint64_t bts = 391875376458684;
-
 TEST(TimerlatPipeLoadTest, SpawnResponder) {
   FifoTimer ft;
   EXPECT_TRUE(ft.ifs.good());
@@ -40,18 +37,22 @@ TEST(TimerlatPipeLoadTest, SpawnResponder) {
 TEST(TimerlatPipeLoadTest, CalculateDelay) {
   FifoTimer ft;
 
-  // Create a file for rtla-tickler to read.
-  const fs::path tmpdir{fs::path{ft.fifopath()}.parent_path()};
-  ASSERT_TRUE(fs::is_directory(tmpdir));
-  std::fstream tlfs(tmpdir.string() + "/rtlafile");
+  // Apparently we cannot reuse the existing tmpdir.
+  char path_template[] = "/tmp/fifodirXXXXXX";
+  char *path = mkdtemp(path_template);
+  std::cout << path << std::endl;
+  std::ofstream tlfs(std::string(path) + "/rtlafile");
   std::string trash{"111111111"};
   tlfs.write(trash.c_str(), trash.length());
+  const size_t pos = tlfs.tellp();
+  ASSERT_EQ(trash.length(), pos);
   tlfs.close();
   // Re-open as ifstream.
-  std::ifstream tlfs0(tmpdir.string() + "/rtlafile");
+  std::ifstream tlfs0(std::string(path) + "/rtlafile");
 
   ft.calculate_roundtrip_delays(tlfs0);
   tlfs0.close();
+  fs::remove_all(path);
 }
 
 } // namespace local_testing
