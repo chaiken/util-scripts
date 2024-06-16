@@ -29,13 +29,16 @@ namespace timerlat_load {
 constexpr char TRACETLD[] = "/sys/kernel/tracing/osnoise/per_cpu/cpu";
 // The core count on both of my test systems.
 constexpr uint16_t CORES = 8U;
-// Size of container which holds a uint64_t timestamp from the pipe read.
-// There are 2 chars per byte in hex representation.
-constexpr size_t PIPE_BUF_SIZE = 2 * sizeof(uint64_t);
-// 1 millisecond.
-constexpr size_t THRESHOLD = 100 * 100 * 100;
+// Size of container which holds a std::chrono::duration<uint64_t,
+// std::nano>.count().
+constexpr size_t PIPE_BUF_SIZE =
+    sizeof(std::chrono::duration<uint64_t, std::nano>) + 1U;
 constexpr size_t LIMIT = 100;
-
+constexpr std::chrono::duration<int, std::micro> TEN_MICROS =
+    std::chrono::duration<int, std::micro>{10};
+// Copied from
+// https://github.com/frc971/971-Robot-Code/blob/acfda878d17c2981040c6904fab3d718e2d4bc67/aos/ipc_lib/named_pipe_latency.cc#L76
+constexpr char STOP_WORD[] = "00000000";
 namespace fs = std::filesystem;
 
 constexpr std::chrono::nanoseconds convert_ns(const struct timespec &ts) {
@@ -46,39 +49,34 @@ constexpr std::chrono::nanoseconds convert_ns(const struct timespec &ts) {
 
 void wait_one_ms();
 
-std::string create_fifo_path();
-void responding_fn(const std::string &fifopath);
+std::optional<std::filesystem::path> create_fifo_dir();
+void responding_fn(const std::filesystem::path &fifofile);
 
 class FifoTimer {
 public:
-  FifoTimer() : fifopath_(create_fifo_path()) {
-    if (-1 == mkfifoat(-1 /*NOT USED*/, fifopath_.c_str(), 0777)) {
-      std::cerr << "Unable to create FIFO: " << strerror(errno) << std::endl;
-      return;
-    }
-    std::cout << "Created fifo at " << fifopath_ << std::endl;
-
-    responder_ = std::thread([this]() { responding_fn(this->fifopath_); });
-    ifs = std::ifstream{fifopath_, std::ifstream::in};
-    if (!ifs.good()) {
-      std::cerr << "Unable to open FIFO for reading: " << strerror(errno)
-                << std::endl;
-    }
-  }
+  FifoTimer() = default;
+  bool start();
+  bool create_responder();
+  void responding_fn();
   void calculate_roundtrip_delays(std::ifstream &tlfs);
-  std::string fifopath() const { return fifopath_; }
+  std::string fifofile() const { return fifofile_; }
+  // Only for unit tests.
+  void set_fifofile(const std::string &fifofile) { fifofile_ = fifofile; }
   std::ifstream ifs;
   void stop() { responder_.join(); }
 
   ~FifoTimer() {
-    stop();
+    std::cerr << "Destructor" << std::endl;
+    if (responder_.joinable()) {
+      stop();
+    }
     ifs.close();
-    fs::remove_all(fs::path(fifopath_).parent_path());
+    fs::remove_all(fifofile_.parent_path());
   }
 
 private:
   std::thread responder_;
-  const std::string fifopath_;
+  std::filesystem::path fifofile_;
 };
 
 } // namespace timerlat_load
