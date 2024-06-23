@@ -32,10 +32,12 @@ constexpr uint16_t CORES = 8U;
 // Size of container which holds a std::chrono::duration<uint64_t,
 // std::nano>.count().
 constexpr size_t PIPE_BUF_SIZE =
-    sizeof(std::chrono::duration<uint64_t, std::nano>) + 1U;
+    sizeof(std::chrono::steady_clock::duration::max()) + 1U;
 constexpr size_t LIMIT = 100;
-constexpr std::chrono::duration<int, std::micro> TEN_MICROS =
-    std::chrono::duration<int, std::micro>{10};
+constexpr std::chrono::duration<int, std::nano> SLEEP_TIME =
+    std::chrono::duration<int, std::nano>{1};
+constexpr std::chrono::duration<int, std::nano> THRESHOLD =
+    std::chrono::duration<int, std::nano>{100};
 // Copied from
 // https://github.com/frc971/971-Robot-Code/blob/acfda878d17c2981040c6904fab3d718e2d4bc67/aos/ipc_lib/named_pipe_latency.cc#L76
 constexpr char STOP_WORD[] = "00000000";
@@ -46,8 +48,6 @@ constexpr std::chrono::nanoseconds convert_ns(const struct timespec &ts) {
       static_cast<int>((1e9 * ts.tv_sec) + ts.tv_nsec)};
   return nanosecs;
 }
-
-void wait_one_ms();
 
 std::optional<std::filesystem::path> create_fifo_dir();
 void responding_fn(const std::filesystem::path &fifofile);

@@ -48,12 +48,9 @@ TEST(TimerlatPipeLoadTest, Start) {
   ifstream rfs(ft.fifofile());
   ASSERT_TRUE(rfs.good());
 
-  wait_one_ms();
-
   char pipe_buffer[PIPE_BUF_SIZE];
-  ft.ifs.readsome(pipe_buffer, PIPE_BUF_SIZE - 1U);
-  cout << ft.ifs.gcount() << " bytes read from pipe: " << pipe_buffer << endl;
-  EXPECT_GT(ft.ifs.gcount(), 0);
+  ft.ifs.readsome(pipe_buffer, PIPE_BUF_SIZE);
+  EXPECT_EQ(static_cast<size_t>(ft.ifs.gcount()), PIPE_BUF_SIZE);
 }
 
 TEST(TimerlatPipeLoadTest, CalculateDelay) {
