@@ -35,7 +35,7 @@ LDFLAGS-NOSANITIZE= -ggdb -g -L$(GTESTLIBPATH)
 %lib_test-coverage: LDFLAGS = $(LDFLAGS-NOSANITIZE)
 %lib_test-coverage:  %lib_test.cc %lib.cc $(GTESTHEADERS)
 	$(CPPCC) $(CPPFLAGS)  $(LDFLAGS) $^ $(GTESTLIBS) -o $@
-	run_lcov.sh $@
+	./run_lcov.sh $@
 
 # https://clang.llvm.org/extra/clang-tidy/
 # https://stackoverflow.com/questions/47583057/configure-clang-check-for-c-standard-libraries

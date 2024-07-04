@@ -9,6 +9,9 @@ set -e
 set -u
 set -o pipefail
 
+readonly LCOV=/usr/local/bin/lcov
+echo "Using $(which lcov)"
+
 if (( $# != 1)); then
   echo "Usage: run_lcov.sh <test name>, where 'test name' is that of the test"
   echo "binary, not that of the source file."
@@ -22,7 +25,7 @@ fi
 
 # Note: .gcno files are created by compilation with --coverage switch.
 #       .gcda files are created by executing the binary directly or with
-# 	 "lcov -c -o foo.info".
+# 	 ""$LCOV" -c -o foo.info".
 
 readonly test_name="$1"
 echo "test_name is ${test_name}"
@@ -38,7 +41,11 @@ echo "Creating coverage data for ${test_name}."
 # Running the binary directly creates .gcda files, but only running this command
 # creates .info files.  Running the command with existing .gcda files does not
 # work.
-lcov --base-directory . --directory . --capture -o "$test_name".info
+# See https://github.com/linux-test-project/lcov/issues/192 for discussion of
+# problems with googletest and lcov.
+"$LCOV" --rc geninfo_unexecuted_blocks=1 --ignore mismatch \
+     --ignore-errors inconsistent -branch-coverage --base-directory . \
+     --directory . --capture -o "$test_name".info
 
 # Applications which depend on libraries that have their own tests:
 #
@@ -52,7 +59,7 @@ lcov --base-directory . --directory . --capture -o "$test_name".info
 # There does not appear to be any way to remove the test binary itself
 # from the coverage analysis, which makes the resulting coverage percentages
 # too high.
-lcov --remove "$test_name".info \
+"$LCOV" --remove "$test_name".info \
      "/usr/*" \
      "/home/alison/gitsrc/googletest/*" \
      -o "$test_name"_processed.info
