@@ -12,7 +12,8 @@ int set_affinity(const pid_t pid, const uint16_t cpu) {
   cpu_set_t cpu_set;
   CPU_ZERO(&cpu_set);
   CPU_SET(cpu, &cpu_set);
-  if (-1 == sched_setaffinity(pid, sizeof(cpu_set), &cpu_set)) {
+  if ((-1 == sched_setaffinity(pid, sizeof(cpu_set), &cpu_set)) ||
+      (!CPU_ISSET(cpu, &cpu_set))) {
     const int save_errno = errno;
     std::cerr << "Unable to set CPU affinity " << std::to_string(cpu)
               << " for PID " << std::to_string(pid) << ": "
