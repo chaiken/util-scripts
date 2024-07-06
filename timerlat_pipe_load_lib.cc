@@ -13,10 +13,10 @@ using namespace std::chrono;
 using namespace std::chrono_literals;
 namespace fs = std::filesystem;
 
-void FifoTimer::responding_fn() {
-  int write_fd = openat(-1 /*NOT USED*/, fifofile_.c_str(), O_WRONLY);
+void responding_fn(const std::string &fifopath) {
+  int write_fd = openat(-1 /*NOT USED*/, fifopath.c_str(), O_WRONLY);
   if (-1 == write_fd) {
-    std::cerr << "Unable to open FIFO " << fifofile_
+    std::cerr << "Unable to open FIFO " << fifopath
               << " for writing: " << strerror(errno) << std::endl;
     std::cerr.flush();
     return;
@@ -65,9 +65,12 @@ std::optional<fs::path> create_fifo_dir() {
 }
 
 // Convenient for tests.
-bool FifoTimer::create_responder() {
-  responder_ = std::thread([this]() { responding_fn(); });
-  // Check something here.
+bool FifoTimer::create_responder(std::function<void(const std::string &)> fn) {
+  responder_ = std::thread(fn, fifofile_.string());
+  if (!responder_.joinable()) {
+    std::cerr << "Failed to launch responder thread." << std::endl;
+    return false;
+  }
   return true;
 }
 
@@ -85,7 +88,8 @@ bool FifoTimer::start() {
   }
   std::cout << "Created fifo at " << fifofile_.string() << std::endl;
 
-  if (!create_responder()) {
+  std::function<void(const std::string &)> fn = responding_fn;
+  if (!create_responder(fn)) {
     std::cerr << "Unable to spawn responder thread." << std::endl;
     return false;
   }

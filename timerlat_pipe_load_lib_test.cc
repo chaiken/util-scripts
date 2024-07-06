@@ -1,8 +1,12 @@
 #include "timerlat_pipe_load.h"
 
+#include <signal.h>
+
 #include <cstdint>
+#include <exception>
 #include <fcntl.h>
 #include <sched.h>
+#include <stdexcept>
 #include <sys/stat.h>
 
 #include "gtest/gtest.h"
@@ -32,9 +36,57 @@ TEST(TimerlatPipeLoadTest, CreateResponder) {
   EXPECT_NE(-1, mkfifoat(-1 /*NOT USED*/, ft.fifofile().c_str(), 0777));
   // The writer must be created before the ifstream, as otherwise open() will
   // block forever.
-  EXPECT_TRUE(ft.create_responder());
+  std::function<void(const std::string &)> fn = responding_fn;
+  EXPECT_TRUE(ft.create_responder(fn));
   ft.ifs = std::ifstream{fifopath, std::ifstream::in};
   EXPECT_TRUE(ft.ifs.good());
+}
+
+void do_nothing(const std::string &nothing) {
+  size_t ignored = nothing.length();
+  ignored++;
+  // SIGCHLD is ignored. Substituting SIGPIPE causes the test to exit with error
+  // 141.
+  // https://stackoverflow.com/questions/18880606/socket-connection-getting-closed-abruptly-with-code-141
+  // the shell adds 128 so you can distinguish between exit codes (usually low
+  // numbers) and fatal signals (also low numbers). Otherwise death by SIGHUP
+  // would look the same as exit(1).
+  raise(SIGCHLD);
+  return;
+}
+
+TEST(TimerlatPipeLoadTest, MinimalResponder) {
+  FifoTimer ft;
+  std::function<void(const std::string &)> fn = do_nothing;
+  EXPECT_TRUE(ft.create_responder(fn));
+}
+
+void do_nothing_fail(const std::string &nothing) {
+  size_t ignored = nothing.length();
+  ignored++;
+  raise(SIGPIPE);
+  return;
+}
+
+TEST(TimerlatPipeLoadTest, BadMinimalResponder) {
+  FifoTimer ft;
+
+  sigset_t set;
+  sigemptyset(&set);
+  sigaddset(&set, SIGPIPE);
+  EXPECT_EQ(0, pthread_sigmask(SIG_BLOCK, &set, nullptr));
+
+  std::function<void(const std::string &)> fn = do_nothing_fail;
+  EXPECT_TRUE(ft.create_responder(fn));
+
+  // The following causes SIGABRT.  The catch of the exception doesn't work,
+  // probably because googletest receives it rather than the test's own code.
+  // std::function<void(const std::string &)> empty_fn;
+  //  try {
+  //    EXPECT_FALSE(ft.create_responder(empty_fn));
+  //  } catch (std::bad_function_call &e) {
+  //    std::cerr << "Oops, an exception." << std::endl;
+  //  }
 }
 
 TEST(TimerlatPipeLoadTest, Start) {

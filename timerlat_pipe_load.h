@@ -19,6 +19,7 @@
 #include <ctime>
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <optional>
 #include <thread>
@@ -50,14 +51,13 @@ constexpr std::chrono::nanoseconds convert_ns(const struct timespec &ts) {
 }
 
 std::optional<std::filesystem::path> create_fifo_dir();
-void responding_fn(const std::filesystem::path &fifofile);
+void responding_fn(const std::string &fifopath);
 
 class FifoTimer {
 public:
   FifoTimer() = default;
   bool start();
-  bool create_responder();
-  void responding_fn();
+  bool create_responder(std::function<void(const std::string &)> fn);
   void calculate_roundtrip_delays(std::ifstream &tlfs);
   std::string fifofile() const { return fifofile_; }
   // Only for unit tests.
