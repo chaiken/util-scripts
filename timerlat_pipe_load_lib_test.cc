@@ -87,6 +87,8 @@ TEST(TimerlatPipeLoadTest, BadMinimalResponder) {
   //  } catch (std::bad_function_call &e) {
   //    std::cerr << "Oops, an exception." << std::endl;
   //  }
+  std::function<void(const std::string &)> empty_fn;
+  EXPECT_FALSE(ft.create_responder(empty_fn));
 }
 
 TEST(TimerlatPipeLoadTest, Start) {

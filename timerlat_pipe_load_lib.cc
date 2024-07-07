@@ -66,6 +66,10 @@ std::optional<fs::path> create_fifo_dir() {
 
 // Convenient for tests.
 bool FifoTimer::create_responder(std::function<void(const std::string &)> fn) {
+  if (!fn) {
+    std::cerr << "Supplied thread function is not executable." << std::endl;
+    return false;
+  }
   responder_ = std::thread(fn, fifofile_.string());
   if (!responder_.joinable()) {
     std::cerr << "Failed to launch responder thread." << std::endl;
