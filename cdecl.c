@@ -59,25 +59,25 @@ enum token_class get_kind (const char *intoken)
 	char *delimiters[] = { "(", ")", "[", "]", "{", "}", "," };
 	char *types[] = { "char", "short", "unsigned", "int", "float", "double", "long", "struct", "enum", "union", "void" };
 	char *qualifiers[] = { "const", "register", "volatile", "static", "*", "extern" };
-	int numel = 0, i;
+	size_t numel = 0, ctr;
 
 	assert(intoken);
 
 	numel = ARRAY_SIZE(delimiters);
-	for (i = 0; i < numel; i++) {
-		if (!strcmp(intoken, delimiters[i]))
+	for (ctr = 0; ctr < numel; ctr++) {
+	  if (!strcmp(intoken, delimiters[ctr]))
 			return(delimiter);
 	}
 
 	numel = ARRAY_SIZE(types);
-	for (i = 0; i < numel; i++) {
-		if (!strcmp(intoken, types[i]))
+	for (ctr = 0; ctr < numel; ctr++) {
+		if (!strcmp(intoken, types[ctr]))
 			return(type);
 	}
 
 	numel = ARRAY_SIZE(qualifiers);
-	for (i = 0; i < numel; i++) {
-		if (!strcmp(intoken, qualifiers[i]))
+	for (ctr = 0; ctr < numel; ctr++) {
+		if (!strcmp(intoken, qualifiers[ctr]))
 			return(qualifier);
 	}
 
@@ -87,12 +87,12 @@ enum token_class get_kind (const char *intoken)
 void showstack(void)
 {
 
-	int tokennum = 1, i;
+	size_t tokennum = 1, ctr;
 
 	printf("\nStack is:\n");
 	/* stack starts at 1 so that (!slen) means empty*/
-	for (i = 1; (stack[i].kind > 0); i++) {
-		printf("Token number %d has kind %d and string %s\n", tokennum, stack[i].kind, stack[i].string);
+	for (ctr = 1; (stack[ctr].kind > 0); ctr++) {
+		printf("Token number %lu has kind %d and string %s\n", tokennum, stack[ctr].kind, stack[ctr].string);
 		tokennum++;
 	}
 
@@ -100,12 +100,12 @@ void showstack(void)
 }
 
 /* fails for multiple arguments */
-void process_function_args(char startstring[], int *arglength)
+void process_function_args(char startstring[], size_t *arglength)
 {
 	char endstring[MAXTOKENLEN];
 	char *argstring = (char *) malloc(strlen(startstring));
 	char *saveptr = argstring;
-	int i, printargs = 0;
+	size_t ctr, printargs = 0;
 
 	assert(startstring);
 
@@ -131,10 +131,10 @@ void process_function_args(char startstring[], int *arglength)
 	if (printargs) {
 		printf("that takes ");
 
-		for (i = 0; i < printargs; i++) {
-			if (endstring[i] == ',')
+		for (ctr = 0; ctr < printargs; ctr++) {
+			if (endstring[ctr] == ',')
 				printf(" and");
-			else putchar(endstring[i]);
+			else putchar(endstring[ctr]);
 		}
 		printf(" args and ");
 	}
@@ -149,11 +149,11 @@ void process_function_args(char startstring[], int *arglength)
 	exit(-1);
 }
 
-void process_array(char startstring[], int *sizelen)
+void process_array(char startstring[], size_t *sizelen)
 {
 	char endstring[MAXTOKENLEN];
+	size_t ctr = 0;
 	*sizelen = 0;
-	int i = 0;
 
 	assert(startstring);
 
@@ -166,8 +166,8 @@ void process_array(char startstring[], int *sizelen)
 	if (endstring[*sizelen] == ']') {
 		/* print any array size values */
 		if (*sizelen >= 1) {
-			while (i++ < *sizelen)
-				printf("%c", startstring[i-1]);
+			while (ctr++ < *sizelen)
+				printf("%c", startstring[ctr-1]);
 		}
 		printf(" ");
 		return;
@@ -205,10 +205,10 @@ void classify_string (struct token *newtoken)
 }
 
 /* move to the right through the declaration */
-int gettoken (char **declstring)
+size_t gettoken (char **declstring)
 {
 
-	int tokenlen, i = 0, tokenoffset = 0;
+	int tokenlen, ctr = 0, tokenoffset = 0;
 	memset(this.string, '\0', MAXTOKENLEN);
 
 	if ((tokenlen = strlen(*declstring)) > MAXTOKENLEN) {
@@ -233,19 +233,19 @@ int gettoken (char **declstring)
 	if (!(isalnum(this.string[0])))
 		goto out;
 
-	for (i = 0; (isalnum(**declstring) && (i <= tokenlen)); i++)	{
-		this.string[i+1] = **declstring;
+	for (ctr = 0; (isalnum(**declstring) && (ctr <= tokenlen)); ctr++)	{
+		this.string[ctr+1] = **declstring;
 		(*declstring)++;
 		tokenoffset++;
 	}
 
 out:
-	this.string[i+1] = '\0';
+	this.string[ctr+1] = '\0';
 	this.kind = get_kind(this.string);
 	return(tokenoffset);
 }
 
-void push_stack(int tokennum)
+void push_stack(size_t tokennum)
 {
 
 	if (tokennum >= MAXTOKENS) {
@@ -259,7 +259,7 @@ void push_stack(int tokennum)
 }
 
 /* move back to the left */
-void pop_stack(int *tokennum)
+void pop_stack(size_t *tokennum)
 {
 
 	if (!(*tokennum)) {
@@ -300,18 +300,18 @@ void pop_stack(int *tokennum)
 	return;
 }
 
-int process_stdin(char *stdinp)
+size_t process_stdin(char *stdinp)
 {
 	char *stringp = (char *) malloc(MAXTOKENLEN);
 	char *savep = stringp;
 
-	int i = 0;
+	size_t ctr = 0;
 	if (fgets(stdinp, MAXTOKENLEN, stdin) != NULL) {
 		strcpy(stringp, stdinp);
 		/* line from stdin ends in '\n' */
 		/* while ((*stringp++ = getchar())!= '\n') */
 		while (*stringp++ != '\n')
-			i++;
+			ctr++;
 		/* make last character a null instead of '\n' */
 		*--stringp='\0';
 	} else {
@@ -321,19 +321,19 @@ int process_stdin(char *stdinp)
 	}
 
 	free(savep);
-	return(i);
+	return(ctr);
 }
 
-void parse_declarator (char input[], int *slen)
+void parse_declarator (char input[], size_t *slen)
 {
 
 	/* strstr() shouldn't return NULL since we've already determined
 	that this.string is present */
 	char *declp = strstr((const char *) input, (const char *) this.string);
 	char *commapos;
-	int offset;
+	size_t offset;
 	static int declnum = 0;
-	int *argoffset = (int *) malloc(sizeof(int));
+	size_t *argoffset = (size_t *) malloc(sizeof(size_t));
 
 #ifdef DEBUG
 	printf("\n\tDeclarator number %d\n", declnum);
@@ -391,6 +391,7 @@ void parse_declarator (char input[], int *slen)
 				fprintf(stderr, "WARNING: only the first of a set of comma-delimited declarations is processed.\n");
 				break;
 			}
+			break;
 		case type: /* no types to the right of identifier */
 			fprintf(stderr, "\nType declaration to the right of the identifier in %s is illegal.\n", this.string);
 			break;
@@ -429,7 +430,8 @@ int main(int argc, char **argv)
 	/* stack starts at 1 so that (!stacklen) means an empty stack,
 	but initialize to zero because counter is incremented before
 	calling push_stack */
-	int stacklen = 0, retval = 0;
+	size_t stacklen = 0;
+	int retval = 0;
 
 	if (argc == 1)
 		usage();
