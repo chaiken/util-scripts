@@ -158,7 +158,7 @@ timerlat_pipe_load_lib_test-tsan: timerlat_pipe_load_lib.cc timerlat_pipe_load.h
 %_lib_test-clangtidy: %_lib_test.cc %_lib.cc %.hh
 	$(CLANG_TIDY_BINARY) $(CLANG_TIDY_OPTIONS) -checks=$(CLANG_TIDY_CHECKS) $^ -- $(CLANG_TIDY_CLANG_OPTIONS)
 
-BINARY_LIST = cdecl hex2dec dec2hex cpumask endian endian_lib_test watch_file watch_one_file endian-cpp endian_lib_test endian-cpp-valgrind cpumask cpumask_gtest cpumask-valgrind cpumask_ctest classify_process_affinity classify_process_affinity_lib_test timerlat_load_lib_test timerlat_load timerlat_pipe_load_lib_test timerlat_pipe_load_lib_test-tsan hanoi datasize
+BINARY_LIST = cdecl hex2dec dec2hex cpumask endian endian_lib_test watch_file watch_one_file endian-cpp endian_lib_test endian-cpp-valgrind cpumask cpumask_gtest cpumask-valgrind cpumask_ctest classify_process_affinity classify_process_affinity_lib_test timerlat_load_lib_test timerlat_load timerlat_pipe_load_lib_test timerlat_pipe_load_lib_test-tsan hanoi datasize linked_list
 
 all:
 	make $(BINARY_LIST)
