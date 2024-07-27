@@ -67,8 +67,6 @@ CLANG_TIDY_CHECKS=bugprone,core,cplusplus,cppcoreguidelines,deadcode,modernize,p
 CC = /usr/bin/gcc
 CPPCC = /usr/bin/g++
 
-all: cdecl hex2dec dec2hex cpumask endian endian-cpp
-
 hex2dec: hex2dec.c
 	${CC} ${CFLAGS} hex2dec.c -o hex2dec -lm
 
@@ -98,6 +96,12 @@ endian-cpp-valgrind: endian.hh endian_lib.cc endian-cpp.cc
 
 cpumask: cpumask.c
 	$(CC) $(CFLAGS) $(LDFLAGS) -o cpumask cpumask.c -lm
+
+watch_file: watch_file.c
+	$(CC) $(CFLAGS) $(LDFLAGS) -o watch_file watch_file.c
+
+watch_one_file: watch_one_file.c
+	$(CC) $(CFLAGS) $(LDFLAGS) -o watch_one_file watch_one_file.c
 
 # How to crash ASAN:
 # Comment out the stanza below.
@@ -145,5 +149,10 @@ timerlat_pipe_load_lib_test-tsan: timerlat_pipe_load_lib.cc timerlat_pipe_load.h
 %_lib_test-clangtidy: %_lib_test.cc %_lib.cc %.hh
 	$(CLANG_TIDY_BINARY) $(CLANG_TIDY_OPTIONS) -checks=$(CLANG_TIDY_CHECKS) $^ -- $(CLANG_TIDY_CLANG_OPTIONS)
 
+BINARY_LIST = cdecl hex2dec dec2hex cpumask endian endian_lib_test watch_file watch_one_file endian-cpp endlian_lib_test endian-cpp-valgrind cpumask cpumask_gtest cpumask-valgrind cpumask_ctest classify_process_affinity classify_process_affinity_lib_test timerlat_load_lib_test timerlat_load timerlat_pipe_load_lib_test timerlat_pipe_load_lib_test-tsan 
+
+all:
+	make $(BINARY_LIST)
+
 clean:
-	/bin/rm -rf *.o *.d *~ hex2dec dec2hex cdecl watch_file watch_one_file cpumask cpumask_gtest cpumask_ctest classify_process_affinity_lib_test classify_process_affinity timerlat_pipe_load_lib_test timerlat_pipe_load_lib_test-tsan timerlat_load *coverage *gcda *gcno *info *css *html *valgrind *png util-scripts
+	/bin/rm -rf $(BINARY_LIST) *.o *.d *~ watch_file watch_one_file cpumask cpumask_gtest cpumask_ctest classify_process_affinity_lib_test classify_process_affinity timerlat_pipe_load_lib_test timerlat_pipe_load_lib_test-tsan timerlat_load *coverage *gcda *gcno *info *css *html *valgrind *png *clangtidy
