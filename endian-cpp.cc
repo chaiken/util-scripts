@@ -1,4 +1,4 @@
-#include "endian_lib.h"
+#include "endian.hh"
 
 #include <cassert>
 

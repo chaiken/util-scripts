@@ -1,4 +1,4 @@
-#include "classify_process_affinity.h"
+#include "classify_process_affinity.hh"
 
 #include "gtest/gtest.h"
 

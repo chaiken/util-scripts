@@ -1,4 +1,4 @@
-#include "endian.h"
+#include "endian.hh"
 
 #include "gtest/gtest.h"
 

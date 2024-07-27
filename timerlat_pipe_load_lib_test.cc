@@ -1,4 +1,4 @@
-#include "timerlat_pipe_load.h"
+#include "timerlat_pipe_load.hh"
 
 #include <signal.h>
 

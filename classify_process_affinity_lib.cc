@@ -28,7 +28,7 @@ $ cat /proc/93/stat
 0 0 0 clang-format on
 */
 
-#include "classify_process_affinity.h"
+#include "classify_process_affinity.hh"
 
 #include <fstream>
 #include <iostream>

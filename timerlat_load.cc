@@ -1,6 +1,6 @@
 // Reimplement linux/tools/tracing/rtla/sample/timerlat_load.py as C++.
 
-#include "timerlat_load.h"
+#include "timerlat_load.hh"
 
 #include <sched.h>
 #include <unistd.h>

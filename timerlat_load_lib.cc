@@ -1,4 +1,4 @@
-#include "timerlat_load.h"
+#include "timerlat_load.hh"
 
 #include <sched.h>
 #include <unistd.h>

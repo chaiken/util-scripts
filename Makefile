@@ -47,7 +47,7 @@ CLANG_TIDY_CLANG_OPTIONS=-std=c++17 -x c++ -I ~/gitsrc/googletest/googletest/inc
 CLANG_TIDY_CHECKS=bugprone,core,cplusplus,cppcoreguidelines,deadcode,modernize,performance,readability,security,unix,apiModeling.StdCLibraryFunctions,apiModeling.google.GTest
 
 # Has matching lib.cc file.
-%_lib_test-clangtidy: %_lib_test.cc %_lib.cc %.h
+%_lib_test-clangtidy: %_lib_test.cc %_lib.cc %.hh
 	$(CLANG_TIDY_BINARY) $(CLANG_TIDY_OPTIONS) -checks=$(CLANG_TIDY_CHECKS) $^ -- $(CLANG_TIDY_CLANG_OPTIONS)
 
 # http://www.valgrind.org/docs/manual/quick-start.html#quick-start.prepare
@@ -87,13 +87,13 @@ hex2dec_test: hex2dec dec2hex
 endian: endian.c
 	$(CC) $(CFLAGS) $(LDFLAGS) -o endian endian.c -lm
 
-endian-cpp: endian.h endian_lib.cc endian-cpp.cc
+endian-cpp: endian.hh endian_lib.cc endian-cpp.cc
 	$(CPPCC) $(CPPFLAGS) $(LDFLAGS) endian_lib.cc endian-cpp.cc -o endian-cpp
 
-endian_lib_test: endian.h endian_lib.cc endian_lib_test.cc
+endian_lib_test: endian.hh endian_lib.cc endian_lib_test.cc
 	$(CPPCC) $(CPPFLAGS) $(LDFLAGS) endian_lib.cc endian_lib_test.cc $(GTESTLIBS) -o $@
 
-endian-cpp-valgrind: endian.h endian_lib.cc endian-cpp.cc
+endian-cpp-valgrind: endian.hh endian_lib.cc endian-cpp.cc
 	$(CPPCC) $(CVALGRINDFLAGS) $(LDVALGRINDFLAGS) endian_lib.cc endian-cpp.cc -o endian-cpp-valgrind -lm
 
 cpumask: cpumask.c
@@ -122,27 +122,27 @@ cpumask_ctest.o: cpumask_ctest.cc
 cpumask_ctest: cpumask_ctest.o cpumask.c
 	$(CPPCC) -isystem $(CATCH_HEADERS) $(CBASICFLAGS) $(LDCATCHFLAGS) -o cpumask_ctest cpumask_ctest.o $(CATCHLIBS)
 
-classify_process_affinity_lib_test: classify_process_affinity_lib.cc classify_process_affinity.h classify_process_affinity_lib_test.cc
+classify_process_affinity_lib_test: classify_process_affinity_lib.cc classify_process_affinity.hh classify_process_affinity_lib_test.cc
 	$(CPPCC) $(CPPFLAGS) $(LDFLAGS)  classify_process_affinity_lib.cc classify_process_affinity_lib_test.cc  $(GTESTLIBS) -o $@
 
-classify_process_affinity: classify_process_affinity.cc classify_process_affinity_lib.cc classify_process_affinity.h
+classify_process_affinity: classify_process_affinity.cc classify_process_affinity_lib.cc classify_process_affinity.hh
 	$(CPPCC) $(CPPFLAGS-NOTEST) $(LDFLAGS-NOTEST)  classify_process_affinity_lib.cc classify_process_affinity.cc -o $@
 
-timerlat_load_lib_test: timerlat_load_lib.cc timerlat_load.h timerlat_load_lib_test.cc
+timerlat_load_lib_test: timerlat_load_lib.cc timerlat_load.hh timerlat_load_lib_test.cc
 	$(CPPCC) $(CPPFLAGS) $(LDFLAGS)  timerlat_load_lib.cc timerlat_load_lib_test.cc  $(GTESTLIBS) -o $@
 
-timerlat_load: timerlat_load_lib.cc timerlat_load.h timerlat_load.cc
+timerlat_load: timerlat_load_lib.cc timerlat_load.hh timerlat_load.cc
 	$(CPPCC) $(CPPFLAGS) $(LDFLAGS)  timerlat_load_lib.cc timerlat_load.cc -o $@
 
-timerlat_pipe_load_lib_test: timerlat_pipe_load_lib.cc timerlat_pipe_load.h timerlat_pipe_load_lib_test.cc
+timerlat_pipe_load_lib_test: timerlat_pipe_load_lib.cc timerlat_pipe_load.hh timerlat_pipe_load_lib_test.cc
 	$(CPPCC) $(CPPFLAGS) $(LDFLAGS)  timerlat_pipe_load_lib.cc timerlat_pipe_load_lib_test.cc  $(GTESTLIBS) -o $@
 
 # https://stackoverflow.com/questions/73136532/where-is-the-data-race-in-this-simple-c-code
 # UBSAN and TSAN together produce erroneous results.
-timerlat_pipe_load_lib_test-tsan: timerlat_pipe_load_lib.cc timerlat_pipe_load.h timerlat_pipe_load_lib_test.cc
+timerlat_pipe_load_lib_test-tsan: timerlat_pipe_load_lib.cc timerlat_pipe_load.hh timerlat_pipe_load_lib_test.cc
 	$(CPPCC) $(CXXFLAGS-NOSANITIZE) -fsanitize=thread $(LDFLAGS-NOSANITIZE) timerlat_pipe_load_lib.cc timerlat_pipe_load_lib_test.cc  $(GTESTLIBS) -o $@
 
-%_lib_test-clangtidy: %_lib_test.cc %_lib.cc %.h
+%_lib_test-clangtidy: %_lib_test.cc %_lib.cc %.hh
 	$(CLANG_TIDY_BINARY) $(CLANG_TIDY_OPTIONS) -checks=$(CLANG_TIDY_CHECKS) $^ -- $(CLANG_TIDY_CLANG_OPTIONS)
 
 clean:
