@@ -82,6 +82,12 @@ cdecl_test: cdecl
 hex2dec_test: hex2dec dec2hex
 	./hex2dec 0xFFFFFF | ./dec2hex
 
+datasize: datasize.c
+	$(CC) $(CFLAGS) $(LDFLAGS) -o datasize datasize.c
+
+hanoi: hanoi.c
+	$(CC) $(CFLAGS) $(LDFLAGS) -o hanoi hanoi.c
+
 endian: endian.c
 	$(CC) $(CFLAGS) $(LDFLAGS) -o endian endian.c -lm
 
