@@ -103,6 +103,9 @@ endian-cpp-valgrind: endian.hh endian_lib.cc endian-cpp.cc
 cpumask: cpumask.c
 	$(CC) $(CFLAGS) $(LDFLAGS) -o cpumask cpumask.c -lm
 
+linked_list: linked_list.c
+	$(CC) $(CFLAGS) $(LDFLAGS) -o linked_list linked_list.c
+
 watch_file: watch_file.c
 	$(CC) $(CFLAGS) $(LDFLAGS) -o watch_file watch_file.c
 
