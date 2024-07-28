@@ -14,9 +14,10 @@ using namespace std::chrono_literals;
 namespace fs = std::filesystem;
 
 void responding_fn(const std::string &fifopath) {
-  int write_fd = openat(-1 /*NOT USED*/, fifopath.c_str(), O_WRONLY);
+  const std::string fifoname{fifopath + "/myfifo"};
+  int write_fd = openat(-1 /*NOT USED*/, fifoname.c_str(), O_WRONLY);
   if (-1 == write_fd) {
-    std::cerr << "Unable to open FIFO " << fifopath
+    std::cerr << "Unable to open FIFO " << fifoname
               << " for writing: " << strerror(errno) << std::endl;
     std::cerr.flush();
     return;
@@ -53,15 +54,10 @@ void responding_fn(const std::string &fifopath) {
   close(write_fd);
 }
 
-std::optional<fs::path> create_fifo_dir() {
-  char path_template[] = "/tmp/fifodirXXXXXX";
-  char *randdir_name = mkdtemp(path_template);
-  if (!randdir_name) {
-    std::cerr << "Temporary directory " << randdir_name
-              << " creation failed: " << strerror(errno) << std::endl;
-    return std::nullopt;
-  }
-  return fs::path{std::string{randdir_name}};
+FifoTimer::FifoTimer() {
+  char path_name[L_tmpnam];
+  std::string randdir{tmpnam(path_name)};
+  fifodir_ = fs::path(randdir);
 }
 
 // Convenient for tests.
@@ -70,7 +66,7 @@ bool FifoTimer::create_responder(std::function<void(const std::string &)> fn) {
     std::cerr << "Supplied thread function is not executable." << std::endl;
     return false;
   }
-  responder_ = std::thread(fn, fifofile_.string());
+  responder_ = std::thread(fn, fifodir_.string());
   if (!responder_.joinable()) {
     std::cerr << "Failed to launch responder thread." << std::endl;
     return false;
@@ -79,25 +75,25 @@ bool FifoTimer::create_responder(std::function<void(const std::string &)> fn) {
 }
 
 bool FifoTimer::start() {
-  std::optional<fs::path> fp_res = create_fifo_dir();
-  if (!fp_res.has_value()) {
-    std::cerr << "FifoTimer creation failed." << std::endl;
+  if (!fs::create_directory(fifodir_)) {
+    std::cerr << "Fifo directory creation at " << fifodir_.string() << " failed"
+              << std::endl;
     return false;
   }
-  fifofile_ = fs::path(fp_res.value().string() + std::string{"/myfifo"});
-  if (-1 == mkfifoat(-1 /*NOT USED*/, fifofile_.c_str(), 0777)) {
-    std::cerr << "Unable to create FIFO at " << fifofile_.string() << ": "
+  const std::string fifoname(fifodir_.string() + "/myfifo");
+  if (-1 == mkfifoat(-1 /*NOT USED*/, fifoname.c_str(), 0777)) {
+    std::cerr << "Unable to create FIFO at " << fifoname << ": "
               << strerror(errno) << std::endl;
     return false;
   }
-  std::cout << "Created fifo at " << fifofile_.string() << std::endl;
+  std::cout << "Created fifo at " << fifoname << std::endl;
 
   std::function<void(const std::string &)> fn = responding_fn;
   if (!create_responder(fn)) {
     std::cerr << "Unable to spawn responder thread." << std::endl;
     return false;
   }
-  ifs = std::ifstream{fifofile_.string(), std::ifstream::in};
+  ifs = std::ifstream{fifoname, std::ifstream::in};
   if (!ifs.good()) {
     std::cerr << "Unable to open FIFO for reading: " << strerror(errno)
               << std::endl;
@@ -116,7 +112,8 @@ void FifoTimer::calculate_roundtrip_delays(std::ifstream &tlfs) {
     // Tickle the timerlat file descriptor.
     tlfs.read(&trash[0], 1);
 
-    if (!(ifs.is_open() && ifs.good() && fs::is_fifo(fifofile_))) {
+    const fs::path fifopath(fifodir_.string() + "/myfifo");
+    if (!(ifs.is_open() && ifs.good() && fs::is_fifo(fifopath))) {
       std::cerr << "Pipe is closed." << std::endl;
       return;
     }

@@ -55,28 +55,33 @@ void responding_fn(const std::string &fifopath);
 
 class FifoTimer {
 public:
-  FifoTimer() = default;
-  bool start();
-  bool create_responder(std::function<void(const std::string &)> fn);
-  void calculate_roundtrip_delays(std::ifstream &tlfs);
-  std::string fifofile() const { return fifofile_; }
-  // Only for unit tests.
-  void set_fifofile(const std::string &fifofile) { fifofile_ = fifofile; }
-  std::ifstream ifs;
-  void stop() { responder_.join(); }
-
+  FifoTimer();
+  FifoTimer(const fs::path &fifodir)
+      : fifodir_(fs::path(fifodir.string() + "/myfifo")) {}
+  // Note that any open file is automatically closed when the fstream object is
+  // destroyed.
   ~FifoTimer() {
     std::cerr << "Destructor" << std::endl;
     if (responder_.joinable()) {
       stop();
     }
-    ifs.close();
-    fs::remove_all(fifofile_.parent_path());
+    if (fs::exists(fifodir_)) {
+      fs::remove_all(fifodir_);
+    }
   }
+
+  bool start();
+  bool create_responder(std::function<void(const std::string &)> fn);
+  void calculate_roundtrip_delays(std::ifstream &tlfs);
+  std::string fifodir() const { return fifodir_.string(); }
+  // Only for unit tests.
+  void set_fifodir(const std::string &fifodir) { fifodir_ = fifodir; }
+  std::ifstream ifs;
+  void stop() { responder_.join(); }
 
 private:
   std::thread responder_;
-  std::filesystem::path fifofile_;
+  std::filesystem::path fifodir_;
 };
 
 } // namespace timerlat_load
