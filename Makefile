@@ -3,16 +3,19 @@ CVALGRINDFLAGS = -O0 -fno-inline -g -ggdb -Wall -Wextra -Werror
 CFLAGS = $(CBASICFLAGS) -isystem $(GTEST_DIR)/include
 CDEBUGFLAGS = $(CFLAGS) -DDEBUG=1
 
-CPPFLAGS= -std=c++17 -ggdb -Wall -Wextra -Werror -g -O0 -fno-inline -fsanitize=address,undefined -I$(GTEST_HEADERS)
-CPPFLAGS += -isystem $(GTEST_DIR)/include
-
 GTEST_DIR = $(HOME)/gitsrc/googletest
 GTEST_HEADERS = $(GTEST_DIR)/googletest/include
 GTESTLIBPATH=$(GTEST_DIR)/build/lib
 GTESTLIBS = $(GTESTLIBPATH)/libgtest.a $(GTESTLIBPATH)/libgtest_main.a
+GMOCK_HEADERS = $(GTEST_DIR)/googlemock/include
+GMOCKLIBPATH=$(GTEST_DIR)/build/lib
+GMOCKLIBS = $(GMOCKLIBPATH)/libgmock.a $(GTESTLIBPATH)/libgmock_main.a
 LDBASICFLAGS= -g -fsanitize=address,undefined
 LDVALGRINDFLAGS= -g
-LDFLAGS= $(LDBASICFLAGS) -L$(GTESTLIBPATH)
+LDFLAGS= $(LDBASICFLAGS) -L$(GTESTLIBPATH) -L$(GMOCKLIBPATH)
+
+CPPFLAGS= -std=c++17 -ggdb -Wall -Wextra -Werror -g -O0 -fno-inline -fsanitize=address,undefined -I$(GTEST_HEADERS) -I$(GMOCK_HEADERS)
+CPPFLAGS += -isystem $(GTEST_DIR)/include
 
 CATCH_DIR = $(HOME)/gitsrc/Catch2
 # "If you are using the two file distribution instead, remember to replace the
@@ -29,8 +32,8 @@ LDFLAGS-NOTEST= -ggdb -g -fsanitize=address
 # “–coverage” is a synonym for-fprofile-arcs, -ftest-coverage(compiling) and
 # -lgcov(linking).
 COVERAGE_EXTRA_FLAGS = --coverage
-CXXFLAGS-NOSANITIZE= -std=c++17 -ggdb -Wall -Wextra -Werror -g -O0 -fno-inline -I$(GTEST_HEADERS) -isystem $(GTEST_DIR)/include
-LDFLAGS-NOSANITIZE= -ggdb -g -L$(GTESTLIBPATH)
+CXXFLAGS-NOSANITIZE= -std=c++17 -ggdb -Wall -Wextra -Werror -g -O0 -fno-inline -I$(GTEST_HEADERS) -I$(GMOCK_HEADERS) -isystem $(GTEST_DIR)/include
+LDFLAGS-NOSANITIZE= -ggdb -g -L$(GTESTLIBPATH)  -L$(GMOCKLIBPATH)
 %lib_test-coverage: CPPFLAGS = $(CXXFLAGS-NOSANITIZE) $(COVERAGE_EXTRA_FLAGS)
 %lib_test-coverage: LDFLAGS = $(LDFLAGS-NOSANITIZE)
 %lib_test-coverage:  %lib_test.cc %lib.cc $(GTESTHEADERS)
@@ -153,7 +156,7 @@ timerlat_pipe_load_lib_test: timerlat_pipe_load_lib.cc timerlat_pipe_load.hh tim
 # https://stackoverflow.com/questions/73136532/where-is-the-data-race-in-this-simple-c-code
 # UBSAN and TSAN together produce erroneous results.
 timerlat_pipe_load_lib_test-tsan: timerlat_pipe_load_lib.cc timerlat_pipe_load.hh timerlat_pipe_load_lib_test.cc
-	$(CPPCC) $(CXXFLAGS-NOSANITIZE) -fsanitize=thread $(LDFLAGS-NOSANITIZE) timerlat_pipe_load_lib.cc timerlat_pipe_load_lib_test.cc  $(GTESTLIBS) -o $@
+	$(CPPCC) $(CXXFLAGS-NOSANITIZE) -fsanitize=thread $(LDFLAGS-NOSANITIZE) timerlat_pipe_load_lib.cc timerlat_pipe_load_lib_test.cc  $(GTESTLIBS) $(GMOCK_LIBS) -o $@
 
 %_lib_test-clangtidy: %_lib_test.cc %_lib.cc %.hh
 	$(CLANG_TIDY_BINARY) $(CLANG_TIDY_OPTIONS) -checks=$(CLANG_TIDY_CHECKS) $^ -- $(CLANG_TIDY_CLANG_OPTIONS)
