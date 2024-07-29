@@ -7,7 +7,9 @@
 #include <exception>
 #include <stdexcept>
 
+#include "gmock/gmock-matchers.h"
 #include "gtest/gtest.h"
+#include "gtest/internal/gtest-port.h"
 
 using namespace std;
 using namespace std::chrono;
@@ -77,7 +79,11 @@ TEST(TimerlatPipeLoadTest, BadMinimalResponder) {
   //    std::cerr << "Oops, an exception." << std::endl;
   //  }
   std::function<void(const std::string &)> empty_fn;
+  ::testing::internal::CaptureStderr();
   EXPECT_FALSE(ft.create_responder(empty_fn));
+  const std::string output = ::testing::internal::GetCapturedStderr();
+  EXPECT_THAT(output, ::testing::HasSubstr(
+                          "Supplied thread function is not executable."));
 }
 
 TEST(TimerlatPipeLoadTest, Start) {

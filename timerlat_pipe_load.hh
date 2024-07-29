@@ -61,7 +61,6 @@ public:
   // Note that any open file is automatically closed when the fstream object is
   // destroyed.
   ~FifoTimer() {
-    std::cerr << "Destructor" << std::endl;
     if (responder_.joinable()) {
       stop();
     }
